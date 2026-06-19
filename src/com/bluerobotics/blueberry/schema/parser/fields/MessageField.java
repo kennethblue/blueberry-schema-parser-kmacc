@@ -75,10 +75,10 @@ public class MessageField extends ParentField {
 		return 4;
 	}
 	@Override
-	public int getPaddedByteCount() {
+	public int getPaddedByteCount() {		
 		int result = getByteCount();
 		int m = result % getMinAlignment();
-		result += m;
+		result += m > 0 ? getMinAlignment() - m : 0;
 		return result;
 	}
 	/**
