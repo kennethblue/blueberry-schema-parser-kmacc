@@ -1059,66 +1059,10 @@ public class JavaWriter extends SourceWriter {
 	}
 	private String makeBbGetSet(Field f, boolean setNotGet) {
 		SymbolName result = SymbolName.fromCamel(setNotGet ? "write" : "read");
+		result = result.append(getTypeString(f));
 		
-		result = result.append(getTypeName(f));
 		
 		return result.toLowerCamelString();
-	}
-	
-	
-	private String getTypeName(Field f) {
-		String result = "";
-		switch(f.getTypeId()) {
-		default:
-		case ARRAY:
-		case BOOLFIELD:
-		case DEFERRED:
-		case FILLER:
-		case MESSAGE:
-		case SEQUENCE:
-		case STRING:
-		case STRUCT:
-			throw new RuntimeException("Should never have done this!");
-		case DEFINED:
-			Field cf = ((DefinedTypeField)f).getFirstChild();
-			result = getTypeName(cf);
-			break;
-		case BOOL:
-			result = "bit";
-			break;
-		case FLOAT32:
-			result = "float32";
-			break;
-		case FLOAT64:
-			result = "float64";
-			break;
-		case INT16:
-			result = "int16";
-			break;
-		case INT32:
-			result = "int32";
-			break;
-		case INT64:
-			result = "int64";
-			break;
-		case INT8:
-			result = "int8";
-			break;
-		case UINT16:
-			result = "uint16";
-			break;
-		case UINT32:
-			result = "uint32";
-			break;
-		case UINT64:
-			result = "uint64";
-			break;
-		case UINT8:
-			result = "uint8";
-			break;
-		
-		}
-		return result;
 	}
 
 	private String getType(Field f) {
@@ -1286,44 +1230,48 @@ public class JavaWriter extends SourceWriter {
 	 */
 	private String lookupGetSetName(Field f, boolean getNotSet) {
 		String result = getNotSet ? "read" : "write";
+		result += getTypeString(f);
+		return result;
+	}
+	private String getTypeString(Field f) {
+		String result = "";
 		switch(f.getTypeId()) {
 		
 		case BOOL:
-			result += "Bit";
+			result = "Bit";
 			break;
 		case FLOAT32:
-			result += "Float32";
+			result = "Float32";
 			break;
 		case FLOAT64:
-			result += "Float64";
+			result = "Float64";
 			break;
 		case INT16:
-			result += "Int16";
+			result = "Int16";
 			break;
 		case INT32:
-			result += "Int32";
+			result = "Int32";
 			break;
 		case INT64:
-			result += "Int64";
+			result = "Int64";
 			break;
 		case INT8:
-			result += "Int8";
+			result = "Int8";
 			break;
 		case UINT16:
-			result += "Uint16";
+			result = "Uint16";
 			break;
 		case UINT32:
-			result += "Uint32";
+			result = "Uint32";
 			break;
 		case UINT64:
-			result += "Uint64";
+			result = "Uint64";
 			break;
 		case UINT8:
-			result += "Uint8";
+			result = "Uint8";
 			break;
-		case DEFINED:
-			Field cf = ((DefinedTypeField)f).getFirstChild();
-			result = lookupGetSetName(cf, getNotSet);
+		case CHAR:
+			result = "Char";
 			break;
 		case FILLER:
 		case BOOLFIELD:
@@ -1333,11 +1281,19 @@ public class JavaWriter extends SourceWriter {
 		case SEQUENCE:
 		case STRING:
 		case DEFERRED:
-		
 			throw new RuntimeException("I don't think this should have happened.");
+	
+		case DEFINED:
+			Field cf = ((DefinedTypeField)f).getFirstChild();
+			result = getTypeString(cf);
+			break;
+		
+		default:
+			break;
 		}
 		return result;
 	}
+
 	/**
 	 * makes a function to test if a message has the specified field or not
 	 * this uses the field number field to compare against the field's ordinal
