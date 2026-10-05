@@ -27,46 +27,68 @@ import com.bluerobotics.blueberry.schema.parser.tokens.TokenConstants.TokenIdent
  * A token that represents a base type
  */
 public class BaseTypeToken extends IdentifierToken {
-
-	private static final TokenIdentifier[] BASE_TYPES = {
-		TokenIdentifier.BOOLEAN,
-		TokenIdentifier.CHAR,
-		TokenIdentifier.BYTE,
-		TokenIdentifier.DOUBLE,
-		TokenIdentifier.FLOAT,
-		TokenIdentifier.INT,
-		TokenIdentifier.INT16,
-		TokenIdentifier.INT32,
-		TokenIdentifier.INT64,
-		TokenIdentifier.INT8,
-		TokenIdentifier.UINT16,
-		TokenIdentifier.UINT32,
-		TokenIdentifier.UINT64,
-		TokenIdentifier.UINT8,
-		TokenIdentifier.LONG,
-		TokenIdentifier.LONG_LONG,
-		TokenIdentifier.SHORT,
-		TokenIdentifier.UNSIGNED,
-		TokenIdentifier.STRING,
-	};
-	private BaseTypeToken(IdentifierToken it) {
+	private static final TokenIdentifier[] BASE_TYPES_V4 = {
+			TokenIdentifier.BOOL,
+			TokenIdentifier.CHAR,
+			TokenIdentifier.BYTE,
+			TokenIdentifier.FLOAT32,
+			TokenIdentifier.FLOAT64,
+			TokenIdentifier.INT,
+			TokenIdentifier.INT16,
+			TokenIdentifier.INT32,
+			TokenIdentifier.INT64,
+			TokenIdentifier.INT8,
+			TokenIdentifier.UINT16,
+			TokenIdentifier.UINT32,
+			TokenIdentifier.UINT64,
+			TokenIdentifier.UINT8,
+			TokenIdentifier.STRING,
+		};
+	
+	private static final TokenIdentifier[] BASE_TYPES_V3 = {
+			TokenIdentifier.BOOLEAN,
+			TokenIdentifier.CHAR,
+			TokenIdentifier.BYTE,
+			TokenIdentifier.DOUBLE,
+			TokenIdentifier.FLOAT,
+			TokenIdentifier.INT,
+			TokenIdentifier.INT16,
+			TokenIdentifier.INT32,
+			TokenIdentifier.INT64,
+			TokenIdentifier.INT8,
+			TokenIdentifier.UINT16,
+			TokenIdentifier.UINT32,
+			TokenIdentifier.UINT64,
+			TokenIdentifier.UINT8,
+			TokenIdentifier.LONG,
+			TokenIdentifier.LONG_LONG,
+			TokenIdentifier.SHORT,
+			TokenIdentifier.UNSIGNED,
+			TokenIdentifier.STRING,
+		};
+	protected BaseTypeToken( IdentifierToken it) {
 		super(it.getStart(), it.getEnd(), it.getKeyword());
 	}
-	public BaseTypeToken(Coord start, Coord end, TokenIdentifier keyword) {
-		super(start, end, keyword);
-	}
-	public static BaseTypeToken makeNew(IdentifierToken it) {
+	
+	public static BaseTypeToken makeNew(IdentifierToken it, boolean v4Not3) {
 		BaseTypeToken result = null;
-		if(isValid(it.getKeyword())) {
-			result = new BaseTypeToken(it);
+		if(v4Not3) {
+			if(isValid(BASE_TYPES_V4, it.getKeyword())) {
+				result = new BaseTypeToken(it);
+			}
+		} else {
+			if(isValid(BASE_TYPES_V3, it.getKeyword())) {
+				result = new BaseTypeToken(it);
+			}
 		}
-		
-
 		return result;
 	}
-	public static boolean isValid(TokenIdentifier ti) {
+		
+
+
+	private static boolean isValid(TokenIdentifier[] tokens, TokenIdentifier ti) {
 		boolean result = false;
-		for(TokenIdentifier tit : BASE_TYPES) {
+		for(TokenIdentifier tit : tokens) {
 			if(tit == ti) {
 				result = true;
 				break;

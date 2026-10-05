@@ -35,7 +35,7 @@ import com.starfishmedical.settings.SettingsKey;
 public enum Key implements SettingsKey {
 //	APP_HEIGHT(Integer.class, 480),
 //	APP_WIDTH(Integer.class, 640),
-	
+	VERSION_4_NOT_3(Boolean.class, true),
 	CODE_HEADER_FILE_PATH(URI.class, (new File(System.getProperty("user.dir"))).toURI()),
 	IDL_HEADER_FILE_PATH(URI.class, (new File(System.getProperty("user.dir"))).toURI()),
 	SCHEMA_DIRECTORY(File.class, (new File(System.getProperty("user.dir")))),

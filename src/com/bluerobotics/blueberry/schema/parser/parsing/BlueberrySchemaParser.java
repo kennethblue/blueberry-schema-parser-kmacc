@@ -51,7 +51,6 @@ import com.bluerobotics.blueberry.schema.parser.fields.SequenceField;
 import com.bluerobotics.blueberry.schema.parser.fields.StringField;
 import com.bluerobotics.blueberry.schema.parser.fields.StructField;
 import com.bluerobotics.blueberry.schema.parser.fields.SymbolName;
-import com.bluerobotics.blueberry.schema.parser.gui.BlueberrySchemaParserGui.TextOutput;
 import com.bluerobotics.blueberry.schema.parser.tokens.Annotation;
 import com.bluerobotics.blueberry.schema.parser.tokens.BaseTypeToken;
 import com.bluerobotics.blueberry.schema.parser.tokens.CharToken;
@@ -97,6 +96,10 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 
 	private final ParserIssueLogger m_log;
 	
+	public static final int VERSION_3 = 3;
+	public static final int VERSION_4 = 4;
+	private int m_ver = VERSION_4;
+	
 	
 	
 	
@@ -141,13 +144,17 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 
 
 		while(c != null) {
-//				c = c.trim();
-			c = processBlockComment(c);
-			c = processLineComment(c);
+			if(m_ver == VERSION_3) {
+				c = processV3BlockComment(c);
+				c = processV3LineComment(c);
+			} else if(m_ver == VERSION_4) {
+				c = processV4Comment(c);
+			}
 			c = processStrings(c);
 			c = processChars(c);
 			c = processNextToken(c);
 			c = processEol(c);
+			
 
 		}
 	
@@ -157,62 +164,11 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 	 */
 	public void parse() {
 		try {
-			collapseIdentifiers();
-			collapseNumbers();
-			collapseSymbolNames();
-			collapseLongLong();
-			collapseBaseTypes();
-			collapseScope();
-			collapseWhiteSpace();
-			collapseUnsigned();
-			collapseComments();
-			
-
-			collapseTypedefs();
-			collapseEols();
-			
-			collapseNameValues();
-//			collapseSemicolons();
-			
-			//check all brackets of all kinds to be sure they all match
-			matchBracket(null);
-
-			assembleFields();
-			fillInMissingEnumValues();
-			checkForDuplicateEnumValues();
-			checkForDuplicateAnnotations();
-			fillInMissingMessageKeyValues();
-			checkForMessagesInTopModuleLevel();
-			
-			fillInMissingModuleKeyValues();
-			propagateModuleAnnotations();
-			assignModuleAnnotations();
-			
-			
-			checkForDuplicateMessageKeys();
-			checkForMessageKeys();
-			checkForMessageTopics();
-			
-			processDeferredFields(m_defines.getIterator(), m_defines);	
-			processDeferredFields(m_messages.getIterator(), m_defines);
-			
-			applyDeferredParameters(m_defines);
-			applyDeferredParameters(m_messages);
-			
-			computeOrder(m_messages);
-		
-			organizeBools(m_messages);
-
-			
-			computeParents(m_defines, null);
-			computeParents(m_messages, null);
-			
-			
-			computeIndeces();
-			
-			sortFields();
-			
-
+			if(m_ver == VERSION_3) {
+				parseV3();
+			} else if(m_ver == VERSION_4) {
+				parseV4();
+			}
 		} catch (SchemaParserException e) {
 			e.printStackTrace();
 		}
@@ -224,6 +180,76 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 
 
 		System.out.println("BlueberrySchemaParser.parse done.");
+	}
+	private void parseV4() {
+		collapseIdentifiers();
+		collapseNumbers();
+		collapseSymbolNames();
+		collapseBaseTypes();
+		collapseWhiteSpace();
+		collapseComments();
+		collapseEols();
+	}
+	
+	private void parseV3() {
+		
+		collapseIdentifiers();
+		collapseNumbers();
+		collapseSymbolNames();
+		collapseLongLong();
+		collapseBaseTypes();
+		collapseScope();
+		collapseWhiteSpace();
+		collapseUnsigned();
+		collapseComments();
+		
+
+		collapseTypedefs();
+		collapseEols();
+		
+		collapseNameValues();
+//			collapseSemicolons();
+		
+		//check all brackets of all kinds to be sure they all match
+		matchBracket(null);
+
+		assembleFields();
+		fillInMissingEnumValues();
+		checkForDuplicateEnumValues();
+		checkForDuplicateAnnotations();
+		fillInMissingMessageKeyValues();
+		checkForMessagesInTopModuleLevel();
+		
+		fillInMissingModuleKeyValues();
+		propagateModuleAnnotations();
+		assignModuleAnnotations();
+		
+		
+		checkForDuplicateMessageKeys();
+		checkForMessageKeys();
+		checkForMessageTopics();
+		
+		processDeferredFields(m_defines.getIterator(), m_defines);	
+		processDeferredFields(m_messages.getIterator(), m_defines);
+		
+		applyDeferredParameters(m_defines);
+		applyDeferredParameters(m_messages);
+		
+		computeOrder(m_messages);
+	
+		organizeBools(m_messages);
+
+		
+		computeParents(m_defines, null);
+		computeParents(m_messages, null);
+		
+		
+		computeIndeces();
+		
+		sortFields();
+			
+
+		
 
 	}
 	/**
@@ -912,7 +938,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 					default:
 						m_log.issueError("Unsigned keyword makes no sense combined with "+btt.getName(), btt.getStart());
 					}
-					BaseTypeToken newBtt = new BaseTypeToken(it.getStart(), btt.getEnd(), newTi);
+					BaseTypeToken newBtt = BaseTypeToken.makeNew(new IdentifierToken(it.getStart(), btt.getEnd(), newTi), m_ver == VERSION_4);
 					m_tokens.replace(btt, newBtt);
 					m_tokens.remove(it);
 				}
@@ -2027,7 +2053,8 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 			IdentifierToken it = m_tokens.gotoNext(IdentifierToken.class);
 			if(it != null) {
 
-				BaseTypeToken btt = BaseTypeToken.makeNew(it);
+				BaseTypeToken btt = BaseTypeToken.makeNew(it, m_ver == VERSION_4);
+				
 				if(btt == null) {
 				} else {
 					m_tokens.replace(it, btt);
@@ -2100,7 +2127,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 	 * @param c
 	 * @return
 	 */
-	private Coord processLineComment(Coord c) {
+	private Coord processV3LineComment(Coord c) {
 		if(c == null) {
 			return null;
 		}
@@ -2109,6 +2136,30 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 			Coord start = result;
 			Coord end = result.nextLine();
 			result = result.incrementIndex(LINE_COMMENT_START);
+			String comment = result.remainingString();
+			result = result.gotoEol();
+			//find the index of the first element of the line that this comment occurred on.
+			//place this commment before that element
+
+			m_tokens.add(m_tokens.getFirstIndexBeforeLine(start.line), new CommentToken(start, end, comment, false));
+		}
+
+		return result;
+	}
+	/**
+	 * find all line comments and insert the token at the start of the line they are on in the token list
+	 * @param c
+	 * @return
+	 */
+	private Coord processV4Comment(Coord c) {
+		if(c == null) {
+			return null;
+		}
+		Coord result = c;//c.trim();
+		if(result.startsWith(TokenIdentifier.HASH.id())) {
+			Coord start = result;
+			Coord end = result.nextLine();
+			result = result.incrementIndex(TokenIdentifier.HASH.id());
 			String comment = result.remainingString();
 			result = result.gotoEol();
 			//find the index of the first element of the line that this comment occurred on.
@@ -2208,7 +2259,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 	 * Checks if the next element of the file is a block comment
 	 * @return the next Coord after a comment if there is one. null if incomplete comment, c if no comment
 	 */
-	private Coord processBlockComment(Coord c){
+	private Coord processV3BlockComment(Coord c){
 		if(c == null) {
 			return null;
 		}
@@ -2297,6 +2348,18 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		assignModuleAnnotations();
 		checkForDuplicateMessageKeys();
 		
+	}
+
+	public void setVersion(int i) {
+		switch(i) {
+		case VERSION_3:
+		case VERSION_4:
+			m_ver = i;
+			break;
+		default:
+			m_ver = VERSION_4;
+				
+		}
 	}
 
 

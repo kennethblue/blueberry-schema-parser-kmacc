@@ -14,6 +14,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
@@ -242,7 +243,9 @@ public class BlueberrySchemaParserGui implements Constants {
 
 		resizer.addMoveComponent(toolbar);
 		cp.add(toolbar, BorderLayout.NORTH);
-		Key[] keys = new Key[] {Key.SCHEMA_DIRECTORY,
+		Key[] keys = new Key[] {
+				Key.VERSION_4_NOT_3,
+				Key.SCHEMA_DIRECTORY,
 				Key.JAVA_DIRECTORY,
 				Key.JAVA_PACKAGE_NAME,
 				Key.C_DIRECTORY,
@@ -464,11 +467,16 @@ public class BlueberrySchemaParserGui implements Constants {
 	private void noThreadParse() {
 
 		File dir = m_settings.getFile(Key.SCHEMA_DIRECTORY);
+		boolean v4 = m_settings.getBoolean(Key.VERSION_4_NOT_3);
+		String ext = v4 ? ".msg" : ".idl";
 		
 		try {
-			m_parser.clear();
 			
-			loadFiles(dir, dir);
+			m_parser.clear();
+			m_parser.setVersion(v4 ? 4 : 3);
+			
+			
+			loadFiles(dir, dir, f -> f.isDirectory() || f.getName().toLowerCase().endsWith(ext));
 			append("Starting Parser");
 			m_parser.parse();
 			appendDone();
@@ -483,14 +491,15 @@ public class BlueberrySchemaParserGui implements Constants {
 		int n = m_log.getIssueCountOfType(Type.NOTE);
 		append("Parsing Done: "+e+" Errors, "+w+" Warnings, "+s+" Skipped, "+n+" Notes.");
 	}
-	private void loadFiles(File root, File f) throws SchemaParserException {
+	private void loadFiles(File root, File f, FileFilter ff) throws SchemaParserException {
 		append("Loading \""+f+"\"\n");
 		if(f.isDirectory()) {
-			File[] fs = f.listFiles();
+			
+			File[] fs = f.listFiles(ff);
 			for(File cf : fs) {
-				loadFiles(root, cf);
+				loadFiles(root, cf, ff);
 			}
-		} else if(f.isFile()) {
+		} else if(f.isFile() && ff.accept(f)) {
 			BufferedReader br;
 			String[] ss = null;
 			try {

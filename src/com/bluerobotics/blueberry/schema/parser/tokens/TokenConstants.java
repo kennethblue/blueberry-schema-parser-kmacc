@@ -30,6 +30,7 @@ public interface TokenConstants {
 		ANGLE_BRACKET_END(">"),
 		ANNOTATION_START("@"),
 		BOOLEAN("boolean"),
+		BOOL("bool"),
 		BRACE_END("}"),
 		BRACE_START("{"),
 		BRACKET_END(")"),
@@ -46,12 +47,16 @@ public interface TokenConstants {
 //		ESCAPE_DELIMITER("_"),
 		FALSE("FALSE"),
 		FLOAT("float"),
+		FLOAT32("float32"),
+		FLOAT64("flaot64"),
+		HASH("#"),
 		IMPORT("import"),
 		INT("int"),
 		INT16("int16"),
 		INT32("int32"),
 		INT64("int64"),
 		INT8("int8"),
+		LESS_THAN_OR_EQUALS("<="),
 		LONG("long"),
 		LONG_LONG("long long"),
 		MESSAGE("message"),
@@ -72,7 +77,8 @@ public interface TokenConstants {
 		UINT32("uint32"),
 		UINT64("uint64"),
 		UINT8("uint8"),
-		UNSIGNED("unsigned")
+		UNSIGNED("unsigned"),
+		WSTRING("wstring")
 		;
 		private String id;
 		TokenIdentifier(String s){
