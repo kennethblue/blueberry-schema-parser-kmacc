@@ -55,8 +55,9 @@ public class TokenList {
 	public void clear() {
 		m_tokens.clear();
 	}
-	public void add(Token t) {
+	public Token add(Token t) {
 		m_tokens.add(t);
+		return t;
 	}
 	public int size() {
 		return m_tokens.size();
@@ -84,8 +85,9 @@ public class TokenList {
 		}
 	}
 
-	public void add(int i, Token t) {
+	public Token add(int i, Token t) {
 		m_tokens.add(i, t);
+		return t;
 	}
 	public void resetIndex() {
 		m_index = 0;
@@ -166,7 +168,7 @@ public class TokenList {
 	 * @param howFar - the number of steps to look. Zero means look until the end.
 	 * @param test - the test to check for
 	 *
-	 * @return
+	 * @return the index of the found token or -1 if none found
 	 */
 	private int findToken(int start, boolean forwardNotReverse, int howFar, Function<Token, Boolean> test) {
 		int i  = start;
@@ -600,30 +602,34 @@ public class TokenList {
 
 	}
 	/**
-	 * looks back through the tokens and finds the first index of this list that occurs before the specified line.
-	 * @param line
-	 * @return
+	 * looks back through the tokens and finds the first index of this list that occurs on the specified token's line in the same file.
+	 * if there is no such token in the same file then it will return an index after the last token of the list
+	 * if there is no such line then it returns the first token of a following line
+	 * if there is no same or greater line then it returns an index after the last token of the list
+	 * @param t - the token on the line that we want to find the start of
+	 * @return the index of token at the start of the line.
 	 */
-	public int getFirstIndexBeforeLine(int line) {
-		int i = size();
-		if(i > 0) {
-			--i;
-			boolean done = false;
-			while(!done) {
-				int lt = get(i).getStart().line;
-				if(lt < line) {
-					++i;
-					done = true;
-				} else {
-					if(i <= 0) {
-						break;
-					} else {
-						--i;
-					}
-				}
-			}
-
+	public int getFirstIndexBeforeLine(Coord c) {
+		//first find the first token of the same file
+		int i = findToken(0, true, 0, t -> t.getStart().isSameFile(c));
+		
+		
+		if(i == -1) {
+			//if we couldn't find one then return the end
+			return size();
 		}
+		//now look for token on the same line
+		i = findToken(i, true, 0, t -> t.getStart().isSameFile(c) && t.getStart().line >= c.line);
+		
+		if(i == -1) {
+			return size();
+		}
+		
+		if(m_tokens.get(i) instanceof FilePathToken) {
+			//if we've found a file path token then advance forward one
+			++i;
+		}
+		
 		return i;
 	}
 

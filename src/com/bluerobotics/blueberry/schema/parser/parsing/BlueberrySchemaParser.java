@@ -137,10 +137,9 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 	public void append(String filePath, String[] schemaLines) {
 		//split into lines
 
-		Coord c = new Coord(filePath, 0,0, schemaLines);	
 
 
-		m_tokens.add(new FilePathToken(c, filePath));
+		Coord c = m_tokens.add(new FilePathToken(filePath, schemaLines)).getStart();
 
 
 		while(c != null) {
@@ -188,7 +187,16 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		collapseBaseTypes();
 		collapseWhiteSpace();
 		collapseComments();
-		collapseEols();
+		collapseEolsV3();
+		
+		collapseNameValues();
+		
+		//check all brackets of all kinds to be sure they all match
+		matchBracket(null);
+		assembleFieldsV3();
+
+		
+		
 	}
 	
 	private void parseV3() {
@@ -205,7 +213,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		
 
 		collapseTypedefs();
-		collapseEols();
+		collapseEolsV3();
 		
 		collapseNameValues();
 //			collapseSemicolons();
@@ -213,7 +221,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		//check all brackets of all kinds to be sure they all match
 		matchBracket(null);
 
-		assembleFields();
+		assembleFieldsV3();
 		fillInMissingEnumValues();
 		checkForDuplicateEnumValues();
 		checkForDuplicateAnnotations();
@@ -947,11 +955,84 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		}
 
 	}
+	/**
+	 * scans through the whole token list and creates all the fields
+	 */
+	private void assembleFieldsV4() {
+		m_moduleStack.clear();
+		m_moduleEnd.clear();
+		m_modules.clear();
+		m_lastComment = null;
+		m_tokens.resetIndex();
+
+		while(m_tokens.isMore()) {
+			Token t = m_tokens.getCurrent();
+			//check if we've hit the closing brace of the current module - if there is one
+			if(!m_moduleEnd.isEmpty() && !m_tokens.isCurrentBefore(m_moduleEnd.getLast())) {
+				m_moduleStack.removeLast();
+				m_moduleEnd.removeLast();
+				m_tokens.next();//skip past last brace
+			}
+			IdentifierToken it = m_tokens.relative(0,IdentifierToken.class);
+			if(it != null) {
+				switch(it.getKeyword()) {
+				case CONST:
+					assembleConst(it);
+					break;
+				case ENUM:
+					assembleEnum(it);
+					break;
+				case IMPORT:
+					assembleImport(it);
+					break;
+				case MESSAGE:
+					assembleMessage(it);
+					break;
+				case MODULE:
+					assembleModule(it);
+					break;
+				case TYPEDEF_SEQUENCE:
+					assembleSequence(it);
+					break;
+				case STRUCT:
+					assembleStructs(it);
+					break;
+				case TYPEDEF:
+					assembleTypedef(it);
+					break;
+				case ANNOTATION_START:
+					assembleAnnotation(it);
+					break;
+				case SEMICOLON:
+					//nothing to do
+					break;
+				default:
+					m_log.issueNote("Did not process "+it+". This is probably not right.", it.getStart());
+					break;
+				}
+
+
+			} else if(t instanceof FilePathToken) {
+				FilePathToken fpt = (FilePathToken)t;
+				m_fileName = fpt.getString();
+				m_imports.clear();
+				m_moduleStack.clear();
+				m_moduleStack.add(BlueModule.ROOT);
+				m_moduleEnd.clear();
+			} else if(t instanceof CommentToken) {
+				CommentToken ct = (CommentToken)t;
+				m_lastComment = ct.combineLines();
+			}
+			m_tokens.next();
+
+		}
+	}
+
 
 	/**
 	 * scans through the whole token list and creates all the fields
 	 */
-	private void assembleFields() {
+	private void assembleFieldsV3() {
 		m_moduleStack.clear();
 		m_moduleEnd.clear();
 		m_modules.clear();
@@ -1945,7 +2026,42 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 	 * remove all end of line tokens that are preceded or followed by a token that no longer needs an EOL token
 	 * This likely now removes all EOL tokens
 	 */
-	private void collapseEols() {
+	private void collapseEolsV3() {
+		m_tokens.resetIndex();
+		while(m_tokens.isMore()){
+			//first find next define element
+			EolToken et = m_tokens.gotoNext(EolToken.class);
+			Token t = m_tokens.relative(-1);
+			if(t instanceof EolToken || t instanceof CommentToken) {
+				m_tokens.remove(et);
+			} else {
+				IdentifierToken it = m_tokens.relative(-1, IdentifierToken.class);
+
+				if(it != null) {
+					if(it.check(TokenIdentifier.BRACE_END,
+							TokenIdentifier.BRACE_START,
+							TokenIdentifier.BRACKET_END,
+							TokenIdentifier.BRACKET_START,
+							TokenIdentifier.COMMA,
+							TokenIdentifier.SQUARE_BRACKET_END,
+							TokenIdentifier.SQUARE_BRACKET_START,
+							TokenIdentifier.SEMICOLON
+					)) {
+						m_tokens.remove(et);
+					} else {
+						m_tokens.next();
+					}
+				} else {
+					m_tokens.next();
+				}
+			}
+		}
+	}
+	/**
+	 * remove all end of line tokens that are preceded or followed by a token that no longer needs an EOL token
+	 * This likely now removes all EOL tokens
+	 */
+	private void collapseEolsV4() {
 		m_tokens.resetIndex();
 		while(m_tokens.isMore()){
 			//first find next define element
@@ -2141,7 +2257,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 			//find the index of the first element of the line that this comment occurred on.
 			//place this commment before that element
 
-			m_tokens.add(m_tokens.getFirstIndexBeforeLine(start.line), new CommentToken(start, end, comment, false));
+			m_tokens.add(m_tokens.getFirstIndexBeforeLine(start), new CommentToken(start, end, comment, false));
 		}
 
 		return result;
@@ -2165,7 +2281,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 			//find the index of the first element of the line that this comment occurred on.
 			//place this commment before that element
 
-			m_tokens.add(m_tokens.getFirstIndexBeforeLine(start.line), new CommentToken(start, end, comment, false));
+			m_tokens.add(m_tokens.getFirstIndexBeforeLine(start), new CommentToken(start, end, comment, false));
 		}
 
 		return result;

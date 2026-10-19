@@ -25,8 +25,8 @@ package com.bluerobotics.blueberry.schema.parser.tokens;
  *
  */
 public class FilePathToken extends StringToken {
-	public FilePathToken(Coord c, String filePath) {
-		super(c, c, filePath);
+	public FilePathToken(String filePath, String[] lines) {
+		super(new Coord(filePath, 0, 0, lines), filePath);
 	}
 	public String toString() {
 		return getClass().getSimpleName()+"(" + getString() + ")";

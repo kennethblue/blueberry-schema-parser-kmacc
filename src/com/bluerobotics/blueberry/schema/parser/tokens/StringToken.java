@@ -33,6 +33,9 @@ public class StringToken extends AbstractToken {
 	public StringToken(Coord start, Coord end) {
 		this(start, end, start.fromThisToThatString(end));
 	}
+	public StringToken(Coord c, String s) {
+		this(c, c, s);
+	}
 	public String toString() {
 		String s = m_string;
 		if(s.length() > 10) {
