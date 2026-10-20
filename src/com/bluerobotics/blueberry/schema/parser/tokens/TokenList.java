@@ -247,11 +247,12 @@ public class TokenList {
 	 * @return
 	 */
 	private Token gotoNext(Function<Token, Boolean> test) {
-		Token result = findNext(getCurrent(), test);
+		Token result = findNext(getCurrent(), null, test);
 
 		setIndex(result);
 		return result;
 	}
+	
 	/**
 	 * finds the next token that passes the specified test
 	 * if none exists then returns null
@@ -259,12 +260,23 @@ public class TokenList {
 	 * @param test
 	 * @return
 	 */
-	private Token findNext(Token start, Function<Token, Boolean> test) {
+	private Token findNext(Token start, Token end, Function<Token, Boolean> test) {
 		int startI = m_tokens.indexOf(start);
+		int endI = m_tokens.indexOf(end);
+		int range = 0;
+		
 		if(startI < 0) {
 			startI = 0;
 		}
-		int i = findToken(startI, true, 0, test);
+		if(endI >= 0) {
+			range = endI - startI;
+			if(range < 0) {
+				return null;
+			}
+		}
+		
+		
+		int i = findToken(startI, true, range, test);
 
 		return get(i);
 	}
@@ -307,7 +319,6 @@ public class TokenList {
 		return resultT;
 	}
 
-
 	/**
 	 * Finds the next IdentifierToken of the specified sub-type
  	 * if none exists then returns null
@@ -316,8 +327,18 @@ public class TokenList {
 	 * @return
 	 */
 	public IdentifierToken findNextId(Token start, TokenIdentifier... tis) {
+		return findNextId(start, null, tis);
+	}
+	/**
+	 * Finds the next IdentifierToken of the specified sub-type
+ 	 * if none exists then returns null
+ 	 * The current location is tested and will be returned if it passes.
+ 	 * @param ti
+	 * @return
+	 */
+	public IdentifierToken findNextId(Token start, Token end, TokenIdentifier... tis) {
 		IdentifierToken it = null;
-		Token t = findNext(start, (tt) -> {
+		Token t = findNext(start, end, (tt) -> {
 			boolean result = false;
 			if(tt.getClass() == IdentifierToken.class) {
 				for(TokenIdentifier ti : tis) {
@@ -408,7 +429,6 @@ public class TokenList {
 		int j = m_tokens.indexOf(t) - m_index + i;
 		return relativeId(j, ids);
 	}
-
 	/**
 	 * finds the next occurance of the specified type and returns it cast to the specific type
 	 * @param <T>
@@ -417,12 +437,25 @@ public class TokenList {
 	 * @return
 	 */
 	public <T extends Token> T findNext(Token start, Class<T> type) {
-		Token r = findNext(start, t -> {
+		return findNext(start, null, type);
+	}
+	/**
+	 * finds the next occurance of the specified type and returns it cast to the specific type
+	 * @param <T>
+	 * @param start
+	 * @param end
+	 * @param type
+	 * @return
+	 */
+	public <T extends Token> T findNext(Token start, Token end, Class<T> type) {
+		Token r = findNext(start, end, t -> {
 			return t.getClass() == type;
 		});
 
 		return type.cast(r);
 	}
+	
+	
 
 	public String toString() {
 		return getClass().getSimpleName() + "("+getCurrent()+", " + relative(1) + ", " + relative(2) + "...)";
@@ -662,5 +695,6 @@ public class TokenList {
 		gotoNext(FilePathToken.class);
 	}
 
+	
 
 }

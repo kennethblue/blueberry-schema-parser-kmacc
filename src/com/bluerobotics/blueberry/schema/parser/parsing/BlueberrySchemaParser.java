@@ -187,18 +187,21 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		collapseBaseTypes();
 		collapseWhiteSpace();
 		collapseComments();
-		collapseEolsV3();
+		removeSemicolons();
+		collapseEolsV4();
 		
-		collapseNameValues();
+//		collapseNameValues();
 		
 		//check all brackets of all kinds to be sure they all match
 		matchBracket(null);
-		assembleFieldsV3();
+		assembleFieldsV4();
 
 		
 		
 	}
 	
+	
+
 	private void parseV3() {
 		
 		collapseIdentifiers();
@@ -773,6 +776,20 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 			}
 		}
 	}
+	private void removeSemicolons() {
+		//remove all spaces followed by tokens that should not be a problem
+				m_tokens.resetIndex();
+				while(m_tokens.isMore()) {
+					IdentifierToken w = m_tokens.relativeId(0,TokenIdentifier.SEMICOLON);
+					if(w != null) {
+						
+						m_tokens.remove(w);
+						
+					} else {
+						m_tokens.next();
+					}
+				}
+	}
 	/**
 	 * scan through tokens looking for a scope separator beside a single word token
 	 */
@@ -967,51 +984,20 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 
 		while(m_tokens.isMore()) {
 			Token t = m_tokens.getCurrent();
-			//check if we've hit the closing brace of the current module - if there is one
-			if(!m_moduleEnd.isEmpty() && !m_tokens.isCurrentBefore(m_moduleEnd.getLast())) {
-				m_moduleStack.removeLast();
-				m_moduleEnd.removeLast();
-				m_tokens.next();//skip past last brace
-			}
-			IdentifierToken it = m_tokens.relative(0,IdentifierToken.class);
-			if(it != null) {
-				switch(it.getKeyword()) {
-				case CONST:
-					assembleConst(it);
-					break;
-				case ENUM:
-					assembleEnum(it);
-					break;
-				case IMPORT:
-					assembleImport(it);
-					break;
-				case MESSAGE:
-					assembleMessage(it);
-					break;
-				case MODULE:
-					assembleModule(it);
-					break;
-				case TYPEDEF_SEQUENCE:
-					assembleSequence(it);
-					break;
-				case STRUCT:
-					assembleStructs(it);
-					break;
-				case TYPEDEF:
-					assembleTypedef(it);
-					break;
-				case ANNOTATION_START:
-					assembleAnnotation(it);
-					break;
-				case SEMICOLON:
-					//nothing to do
-					break;
-				default:
-					m_log.issueNote("Did not process "+it+". This is probably not right.", it.getStart());
-					break;
-				}
-
-
+			Token eol = m_tokens.findNext(t, EolToken.class);//this is the end of the line
+			Token eq = m_tokens.findNextId(t, eol, TokenIdentifier.EQUALS);
+			
+			Token ob = m_tokens.findNextId(t, eol, TokenIdentifier.SQUARE_BRACKET_START);
+			
+			Token cb = ob == null ? null : m_tokens.matchBracket(ob);
+			
+			
+			
+			if(t instanceof BaseTypeToken) {
+				//this is either a base type field or constant, or perhaps an array or sequence
+			} else if(t instanceof SymbolNameToken) {
+				//this is either a struct field or a struct array, or struct sequence
+				
 			} else if(t instanceof FilePathToken) {
 				FilePathToken fpt = (FilePathToken)t;
 				m_fileName = fpt.getString();
