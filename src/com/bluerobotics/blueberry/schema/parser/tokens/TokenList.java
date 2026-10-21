@@ -46,6 +46,8 @@ public class TokenList {
 		}
 		return m_tokens.get(m_index);
 	}
+	
+	
 	public Token get(int i) {
 		if(i < 0 || i >= m_tokens.size()) {
 			return null;
@@ -294,6 +296,20 @@ public class TokenList {
 			return cs == t.getClass();
 		}));
 	}
+	/**
+	 * returns the current token as the specified type
+	 * or returns null if it is not of that type
+	 * @param <T>
+	 * @param c
+	 * @return
+	 */
+	public <T extends Token> T getCurrentAs(Class<T> c) {
+		Token t = getCurrent();
+		if(c.isInstance(t)) {
+			return c.cast(getCurrent());
+		}
+		return null;
+	}
 	
 	/**
 	 * finds the next tokens of the specified class, but will stop if it reaches stopHere
@@ -453,6 +469,24 @@ public class TokenList {
 		});
 
 		return type.cast(r);
+	}
+	
+	
+	public Token getLastNonNull(Token...tokens){
+		int i = -1;
+		for(Token t : tokens) {
+			if(t != null) {
+				int j = m_tokens.indexOf(t);
+				if(j > i) {
+					i = j;
+				}
+			}
+		}
+		Token result = null;
+		if(i >= 0) {
+			result = m_tokens.get(i);
+		}
+		return result;
 	}
 	
 	

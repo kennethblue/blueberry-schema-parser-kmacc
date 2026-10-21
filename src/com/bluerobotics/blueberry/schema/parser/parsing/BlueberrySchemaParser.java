@@ -182,18 +182,21 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 	}
 	private void parseV4() {
 		collapseIdentifiers();
+		collapseLessThanOrEqualTo();
 		collapseNumbers();
 		collapseSymbolNames();
+		//need to convert any symbol names to scope names if they contain a "/"
 		collapseBaseTypes();
 		collapseWhiteSpace();
 		collapseComments();
-		removeSemicolons();
+		removeSemicolons();//there shouldn't be semicolons but remove just in case
 		collapseEolsV4();
 		
 //		collapseNameValues();
 		
 		//check all brackets of all kinds to be sure they all match
 		matchBracket(null);
+		
 		assembleFieldsV4();
 
 		
@@ -984,18 +987,27 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 
 		while(m_tokens.isMore()) {
 			Token t = m_tokens.getCurrent();
-			Token eol = m_tokens.findNext(t, EolToken.class);//this is the end of the line
-			Token eq = m_tokens.findNextId(t, eol, TokenIdentifier.EQUALS);
+			BaseTypeToken bt = m_tokens.getCurrentAs(BaseTypeToken.class);
+			SymbolNameToken st = m_tokens.getCurrentAs(SymbolNameToken.class);
+			EolToken eol = m_tokens.findNext(t, EolToken.class);//this is the end of the line
+			IdentifierToken eq = m_tokens.findNextId(t, eol, TokenIdentifier.EQUALS);
 			
-			Token ob = m_tokens.findNextId(t, eol, TokenIdentifier.SQUARE_BRACKET_START);
+			IdentifierToken ob = m_tokens.findNextId(t, eol, TokenIdentifier.SQUARE_BRACKET_START);
 			
-			Token cb = ob == null ? null : m_tokens.matchBracket(ob);
+			//look for square brackets indicating an array
+			IdentifierToken cb = ob == null ? null : m_tokens.matchBracket(ob);
+			IdentifierToken lte = cb == null ? null : m_tokens.findNextId(ob, cb, TokenIdentifier.LESS_THAN_OR_EQUALS);
+			NumberToken nt = cb == null ? null : m_tokens.findNext(ob, cb, NumberToken.class);
+			SymbolNameToken snt = cb == null ? null : m_tokens.findNext(ob, cb, SymbolNameToken.class);
+			
+			//look for a value that indicates either a default or constant value
+			NumberToken v = m_tokens.findNext(m_tokens.getLastNonNull(eq, cb), eol, NumberToken.class);
+			SymbolNameToken nv = m_tokens.findNext(m_tokens.getLastNonNull(eq, cb), eol, SymbolNameToken.class);
 			
 			
-			
-			if(t instanceof BaseTypeToken) {
+			if(bt != null) {
 				//this is either a base type field or constant, or perhaps an array or sequence
-			} else if(t instanceof SymbolNameToken) {
+			} else if(st != null) {
 				//this is either a struct field or a struct array, or struct sequence
 				
 			} else if(t instanceof FilePathToken) {
@@ -1907,6 +1919,30 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 
 		}
 	}
+	
+	
+	/**
+	 * Tests all single word tokens and replaces with a Number token if it's formatted like a number
+	 */
+	private void collapseLessThanOrEqualTo() {
+		m_tokens.resetIndex();
+		while(m_tokens.isMore()){
+			//first find next define element
+			IdentifierToken id1 = m_tokens.gotoNextId(TokenIdentifier.ANGLE_BRACKET_START);
+			if(id1 == null) {
+				break;
+			}
+			Token t = m_tokens.next(id1);
+			if(t instanceof IdentifierToken) {
+				IdentifierToken id2 = (IdentifierToken)t;
+				if(id2.getKeyword() == TokenIdentifier.EQUALS) {
+					IdentifierToken nid = new IdentifierToken(id1.getStart(), id2.getEnd(), TokenIdentifier.LESS_THAN_OR_EQUALS);
+					m_tokens.replace(id1, nid);
+					m_tokens.remove(id2);
+				}
+			}
+		}
+	}
 	/**
 	 * scans for annotation starting tokens and makes annotation tokens of the next single word token
 	 */
@@ -2147,7 +2183,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 
 
 	/**
-	 * Scan through all
+	 * Scan through all tokens and those Id tokens whose IDs represent base types re converted to base types
 	 */
 	private void collapseBaseTypes() {
 		m_tokens.resetIndex();
