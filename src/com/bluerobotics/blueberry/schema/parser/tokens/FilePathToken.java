@@ -21,14 +21,27 @@ THE SOFTWARE.
 */
 package com.bluerobotics.blueberry.schema.parser.tokens;
 
+import java.io.File;
+import java.util.regex.Pattern;
+
 /**
  *
  */
 public class FilePathToken extends StringToken {
+	private final String[] m_path;
 	public FilePathToken(String filePath, String[] lines) {
 		super(new Coord(filePath, 0, 0, lines), filePath);
+		m_path = split(filePath);
 	}
 	public String toString() {
 		return getClass().getSimpleName()+"(" + getString() + ")";
 	}
+	private static  String[] split(String s) {
+		return s.split(Pattern.quote(File.separator));
+	}
+	public String getPathElementFromEnd(int n) {
+		int m = m_path.length - 1 - n;
+		return m_path[m];
+	}
+	
 }

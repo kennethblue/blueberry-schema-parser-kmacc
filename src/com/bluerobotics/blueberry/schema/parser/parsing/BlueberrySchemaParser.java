@@ -21,11 +21,13 @@ THE SOFTWARE.
 */
 package com.bluerobotics.blueberry.schema.parser.parsing;
 
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.ListIterator;
+import java.util.regex.Pattern;
 
 import com.bluerobotics.blueberry.schema.parser.constants.BooleanConstant;
 import com.bluerobotics.blueberry.schema.parser.constants.Constant;
@@ -138,15 +140,23 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		//split into lines
 
 
-
-		Coord c = m_tokens.add(new FilePathToken(filePath, schemaLines)).getStart();
-
+		FilePathToken fpt = new FilePathToken(filePath, schemaLines);
+		
+		Coord c = m_tokens.add(fpt).getStart();
+		if(m_ver == VERSION_4) {
+			if(!fpt.getPathElementFromEnd(1).toLowerCase().equals("msg")) {
+				m_log.issueError("Expecting messge files to be in a directory called \"msg\"", fpt.getStart());
+			}
+		}
+				
 
 		while(c != null) {
 			if(m_ver == VERSION_3) {
 				c = processV3BlockComment(c);
 				c = processV3LineComment(c);
 			} else if(m_ver == VERSION_4) {
+				
+				
 				c = processV4Comment(c);
 			}
 			c = processStrings(c);
@@ -1007,6 +1017,13 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 			
 			if(bt != null) {
 				//this is either a base type field or constant, or perhaps an array or sequence
+				if(eq != null) {
+					//it's a constant
+					if(cb != null) {
+						//there's an array bracket and that should not be a constant
+						m_log.issueError("Can't have a constant array, sorry.", ob.getStart());
+					}
+				}
 			} else if(st != null) {
 				//this is either a struct field or a struct array, or struct sequence
 				
@@ -1016,6 +1033,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 				m_imports.clear();
 				m_moduleStack.clear();
 				m_moduleStack.add(BlueModule.ROOT);
+				m_moduleStack.add(new BlueModule(ScopeName.make(SymbolName.Case.LOWER_SNAKE, "/", fpt.getPathElementFromEnd(1)), fpt.getStart()));
 				m_moduleEnd.clear();
 			} else if(t instanceof CommentToken) {
 				CommentToken ct = (CommentToken)t;
