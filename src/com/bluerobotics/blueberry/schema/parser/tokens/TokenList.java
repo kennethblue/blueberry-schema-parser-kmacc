@@ -471,7 +471,11 @@ public class TokenList {
 		return type.cast(r);
 	}
 	
-	
+	/**
+	 * determines the non-null token in the specified list that occurs latest in this token list
+	 * @param tokens
+	 * @return the latest occurring token or null if all inputs are null
+	 */
 	public Token getLastNonNull(Token...tokens){
 		int i = -1;
 		for(Token t : tokens) {
@@ -488,6 +492,28 @@ public class TokenList {
 		}
 		return result;
 	}
+	/**
+	 * determines the non-null token in the specified list that occurs earliest in this token list
+	 * @param tokens
+	 * @return the earliest occurring token or null if all inputs are null
+	 */
+	public Token getFirstNonNull(Token...tokens){
+		int i = -1;
+		for(Token t : tokens) {
+			if(t != null) {
+				int j = m_tokens.indexOf(t);
+				if(j < i) {
+					i = j;
+				}
+			}
+		}
+		Token result = null;
+		if(i >= 0) {
+			result = m_tokens.get(i);
+		}
+		return result;
+	}
+	
 	
 	
 

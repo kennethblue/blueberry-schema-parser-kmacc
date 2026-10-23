@@ -159,7 +159,8 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 				
 				c = processV4Comment(c);
 			}
-			c = processStrings(c);
+			c = processStrings(c, STRING_DELIMITER);
+			c = processStrings(c, "'");//for v4 strings are valid to be enclosed in single quotes too
 			c = processChars(c);
 			c = processNextToken(c);
 			c = processEol(c);
@@ -1033,6 +1034,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 				m_imports.clear();
 				m_moduleStack.clear();
 				m_moduleStack.add(BlueModule.ROOT);
+				//for now assume that the name of the directory containing the msg folder is the package (or module as I'm calling it)
 				m_moduleStack.add(new BlueModule(ScopeName.make(SymbolName.Case.LOWER_SNAKE, "/", fpt.getPathElementFromEnd(1)), fpt.getStart()));
 				m_moduleEnd.clear();
 			} else if(t instanceof CommentToken) {
@@ -2374,14 +2376,14 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 	 * @param c
 	 * @return
 	 */
-	private Coord processStrings(Coord c) {
+	private Coord processStrings(Coord c, String delimiter) {
 		if(c == null) {
 			return null;
 		}
 
 		Coord result = c;
 
-		if(result.startsWith(STRING_DELIMITER)) {
+		if(result.startsWith(delimiter)) {
 			Coord start = result.incrementIndex(1);//we don't want to point to the quotation mark
 			Coord end = start;
 			boolean notDone = true;
@@ -2394,7 +2396,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 				if(result.isAtEnd()) {
 					notDone = false;
 					end = result;
-				} else if(result.startsWith(STRING_DELIMITER)) {
+				} else if(result.startsWith(delimiter)) {
 					end = result;
 					notDone = false;
 					result = result.incrementIndex(1);
