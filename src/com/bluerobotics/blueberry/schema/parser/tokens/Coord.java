@@ -201,12 +201,57 @@ public class Coord implements Comparable<Coord> {
 		}
 		return result;
 	}
+	/**
+	 * checks if this coordinate is the start of one of the specified identifiers
+	 * This makes no assumption about what comes next
+	 * @param matches
+	 * @return
+	 */
 	public boolean matches(TokenIdentifier... matches) {
 		boolean matched = false;
 
 		for(TokenIdentifier m : matches) {
 			if(startsWith(m.id())) {
 				matched = true;
+				break;
+			}
+
+		}
+
+		return matched;
+	}
+	/**
+	 * checks the n characters after this coordinate for a perfect match to one of the specified identifiers
+	 * @param n
+	 * @param matches
+	 * @return
+	 */
+	public boolean matches(Coord end, TokenIdentifier... matches) {
+		boolean matched = false;
+
+		for(TokenIdentifier m : matches) {
+			String s = fromThisToThatString(end);
+			if(s.trim().equals(m.id())){
+				matched = true;
+				break;
+			}
+
+		}
+
+		return matched;
+	}
+	/**
+	 * find the TokenIdentifier from the parameters that matches exactly the contents between this coord and end
+	 * If this Coord does not start with any of the specified TokenIdentifiers then it returns null
+	 * @param matches
+	 * @return
+	 */
+	public TokenIdentifier findMatch(Coord end, TokenIdentifier... matches) {
+		TokenIdentifier matched = null;
+
+		for(TokenIdentifier m : matches) {
+			if(matches(end, m)) {
+				matched = m;
 				break;
 			}
 
@@ -277,6 +322,7 @@ public class Coord implements Comparable<Coord> {
 		return result;
 
 	}
+
 	public boolean isAtEnd() {
 		return index >= getString().length();
 	}
@@ -304,6 +350,9 @@ public class Coord implements Comparable<Coord> {
 	public String fromThisToThatString(Coord that) {
 		return getString().substring(index, that.index);
 	}
+	public String fromThisToThatString(int n) {
+		return getString().substring(index, index + n);
+	}
 	public boolean isEol() {
 		return index == getString().length();
 	}
@@ -323,7 +372,11 @@ public class Coord implements Comparable<Coord> {
 		if(s.length() > 14) {
 			s += "...";
 		}
-		s = "Coord(\""+s+"\")";
+		if(s.length() > 0) {
+			s = "Coord(\""+s+"\")";
+		} else {
+			s = "Coord(EOL)";
+		}
 		return s;
 	}
 	public int getLineIndex() {

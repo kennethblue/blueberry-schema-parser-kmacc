@@ -28,6 +28,11 @@ import com.bluerobotics.blueberry.schema.parser.tokens.TokenConstants.TokenIdent
  */
 public class IdentifierToken extends AbstractToken {
 	private final TokenIdentifier m_id;
+	public IdentifierToken(Coord start, TokenIdentifier ti) {
+		Coord end = start.incrementIndex(ti.id().length());
+		super(start, end);
+		m_id = ti;
+	}
 	public IdentifierToken(Coord start, Coord end, TokenIdentifier ti) {
 		super(start, end);
 		m_id = ti;

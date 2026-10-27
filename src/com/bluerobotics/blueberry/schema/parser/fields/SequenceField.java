@@ -32,6 +32,7 @@ import com.bluerobotics.blueberry.schema.parser.types.TypeId;
  */
 public class SequenceField extends ParentField implements MultipleField {
 	private int m_limit;
+	
 	public SequenceField(SymbolName name, ScopeName typeName, String comment, Coord c) {
 		super(name, typeName, TypeId.SEQUENCE, comment, c);
 	}
@@ -89,4 +90,10 @@ public class SequenceField extends ParentField implements MultipleField {
 	public int[] getNumber() {
 		return new int[] {-1};
 	}
+
+	@Override
+	public boolean isFixed() {
+		return false;//sequences are by definition not fixed in size
+	}
+	
 }

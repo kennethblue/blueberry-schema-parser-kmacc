@@ -53,6 +53,7 @@ import com.bluerobotics.blueberry.schema.parser.fields.SequenceField;
 import com.bluerobotics.blueberry.schema.parser.fields.StringField;
 import com.bluerobotics.blueberry.schema.parser.fields.StructField;
 import com.bluerobotics.blueberry.schema.parser.fields.SymbolName;
+import com.bluerobotics.blueberry.schema.parser.fields.SymbolName.Case;
 import com.bluerobotics.blueberry.schema.parser.tokens.Annotation;
 import com.bluerobotics.blueberry.schema.parser.tokens.BaseTypeToken;
 import com.bluerobotics.blueberry.schema.parser.tokens.CharToken;
@@ -70,6 +71,7 @@ import com.bluerobotics.blueberry.schema.parser.tokens.SymbolNameToken;
 import com.bluerobotics.blueberry.schema.parser.tokens.Token;
 import com.bluerobotics.blueberry.schema.parser.tokens.TokenConstants;
 import com.bluerobotics.blueberry.schema.parser.tokens.TokenList;
+import com.bluerobotics.blueberry.schema.parser.tokens.TokenConstants.TokenIdentifier;
 import com.bluerobotics.blueberry.schema.parser.types.TypeId;
 import com.bluerobotics.blueberry.schema.parser.writers.WriterUtils;
 import com.starfishmedical.comms.Crc1021;
@@ -79,8 +81,170 @@ import com.starfishmedical.comms.Crc1021;
  * This reads the schema file, tokenizes and then builds a data structure of fields to represent the schema
  */
 public class BlueberrySchemaParser implements Constants, TokenConstants {
+	private static final TokenIdentifier[] VERSION_3_IDENTIFIERS = {
+		TokenIdentifier.DOUBLE_COLON,
+		TokenIdentifier.ANNOTATION_START,
+		TokenIdentifier.CHAR,
+		TokenIdentifier.COLON,
+		TokenIdentifier.COMMA,
+		TokenIdentifier.HASH,
 
+		TokenIdentifier.LESS_THAN_OR_EQUALS,
+		TokenIdentifier.EQUALS,
+		TokenIdentifier.SEMICOLON,
+		TokenIdentifier.SPACE,
+		TokenIdentifier.TAB,
 
+		TokenIdentifier.BRACE_START,
+		TokenIdentifier.BRACE_END,
+		TokenIdentifier.BRACKET_START,
+		TokenIdentifier.BRACKET_END,
+		TokenIdentifier.SQUARE_BRACKET_START,
+		TokenIdentifier.SQUARE_BRACKET_END,
+		TokenIdentifier.ANGLE_BRACKET_START,
+		TokenIdentifier.ANGLE_BRACKET_END,
+
+		TokenIdentifier.BOOLEAN,
+		TokenIdentifier.BYTE,
+		TokenIdentifier.SHORT,
+		TokenIdentifier.LONG_LONG,
+		TokenIdentifier.LONG,
+		TokenIdentifier.INT,
+		TokenIdentifier.INT16,
+		TokenIdentifier.INT32,
+		TokenIdentifier.INT64,
+		TokenIdentifier.INT8,
+		TokenIdentifier.UINT16,
+		TokenIdentifier.UINT32,
+		TokenIdentifier.UINT64,
+		TokenIdentifier.UINT8,
+		TokenIdentifier.UNSIGNED,
+		TokenIdentifier.FLOAT,
+		TokenIdentifier.FLOAT32,
+		TokenIdentifier.FLOAT64,
+		TokenIdentifier.STRING,
+		TokenIdentifier.WSTRING,
+		TokenIdentifier.DOUBLE,
+
+		TokenIdentifier.TRUE,
+		TokenIdentifier.FALSE,
+		TokenIdentifier.CONST,
+		TokenIdentifier.ENUM,
+		TokenIdentifier.IMPORT,
+		TokenIdentifier.MESSAGE,
+		TokenIdentifier.MODULE,
+		TokenIdentifier.STRUCT,
+		TokenIdentifier.TYPEDEF_SEQUENCE,
+		TokenIdentifier.TYPEDEF,
+		TokenIdentifier.SEQUENCE			
+	};
+	private static final TokenIdentifier[] VERSION_3_SEPARATORS = {
+		TokenIdentifier.SPACE,
+		TokenIdentifier.TAB,
+		TokenIdentifier.BRACE_START,
+		TokenIdentifier.BRACE_END,
+		TokenIdentifier.BRACKET_START,
+		TokenIdentifier.BRACKET_END,
+		TokenIdentifier.SQUARE_BRACKET_START,
+		TokenIdentifier.SQUARE_BRACKET_END,
+		TokenIdentifier.ANGLE_BRACKET_START,
+		TokenIdentifier.ANGLE_BRACKET_END,
+		TokenIdentifier.DOUBLE_COLON,
+		TokenIdentifier.COLON,
+		TokenIdentifier.EQUALS,
+		TokenIdentifier.ANNOTATION_START,
+		TokenIdentifier.SEMICOLON,
+		TokenIdentifier.COMMA
+	};
+
+	
+	private static final TokenIdentifier[] VERSION_3_BASE_TYPES = {
+		TokenIdentifier.BOOLEAN,
+		TokenIdentifier.CHAR,
+		TokenIdentifier.BYTE,
+		TokenIdentifier.DOUBLE,
+		TokenIdentifier.FLOAT,
+		TokenIdentifier.INT,
+		TokenIdentifier.INT16,
+		TokenIdentifier.INT32,
+		TokenIdentifier.INT64,
+		TokenIdentifier.INT8,
+		TokenIdentifier.UINT16,
+		TokenIdentifier.UINT32,
+		TokenIdentifier.UINT64,
+		TokenIdentifier.UINT8,
+		TokenIdentifier.LONG,
+		TokenIdentifier.LONG_LONG,
+		TokenIdentifier.SHORT,
+		TokenIdentifier.UNSIGNED,
+		TokenIdentifier.STRING,
+	};
+	private static final TokenIdentifier[] VERSION_4_IDENTIFIERS = {
+//			TokenIdentifier.ANNOTATION_START,
+//			TokenIdentifier.COLON,
+		TokenIdentifier.COMMA,
+		TokenIdentifier.HASH,
+
+		TokenIdentifier.LESS_THAN_OR_EQUALS,
+		TokenIdentifier.EQUALS,
+		TokenIdentifier.SEMICOLON,
+		TokenIdentifier.SPACE,
+		TokenIdentifier.TAB,
+
+//			TokenIdentifier.BRACE_START,
+//			TokenIdentifier.BRACE_END,
+//			TokenIdentifier.BRACKET_START,
+//			TokenIdentifier.BRACKET_END,
+		TokenIdentifier.SQUARE_BRACKET_START,
+		TokenIdentifier.SQUARE_BRACKET_END,
+//			TokenIdentifier.ANGLE_BRACKET_START,
+//			TokenIdentifier.ANGLE_BRACKET_END,
+
+		TokenIdentifier.BOOL,
+		TokenIdentifier.CHAR,
+		TokenIdentifier.BYTE,
+		TokenIdentifier.INT16,
+		TokenIdentifier.INT32,
+		TokenIdentifier.INT64,
+		TokenIdentifier.INT8,
+		TokenIdentifier.UINT16,
+		TokenIdentifier.UINT32,
+		TokenIdentifier.UINT64,
+		TokenIdentifier.UINT8,
+		TokenIdentifier.FLOAT32,
+		TokenIdentifier.FLOAT64,
+		TokenIdentifier.STRING,
+		TokenIdentifier.WSTRING,
+
+		TokenIdentifier.TRUE,
+		TokenIdentifier.FALSE,
+	};
+	private static final TokenIdentifier[] VERSION_4_SEPARATORS = {
+		TokenIdentifier.SPACE,
+		TokenIdentifier.TAB,
+		TokenIdentifier.SQUARE_BRACKET_START,
+		TokenIdentifier.SQUARE_BRACKET_END,
+		TokenIdentifier.LESS_THAN_OR_EQUALS,
+		TokenIdentifier.EQUALS,
+		TokenIdentifier.COMMA
+	};
+	private static final TokenIdentifier[] VERSION_4_BASE_TYPES = {
+		TokenIdentifier.BOOL,
+		TokenIdentifier.CHAR,
+		TokenIdentifier.BYTE,
+		TokenIdentifier.FLOAT32,
+		TokenIdentifier.FLOAT64,
+		TokenIdentifier.INT,
+		TokenIdentifier.INT16,
+		TokenIdentifier.INT32,
+		TokenIdentifier.INT64,
+		TokenIdentifier.INT8,
+		TokenIdentifier.UINT16,
+		TokenIdentifier.UINT32,
+		TokenIdentifier.UINT64,
+		TokenIdentifier.UINT8,
+		TokenIdentifier.STRING,
+	};
 //	private static final String SEP = TokenIdentifier.SCOPE_SEPARATOR.id();
 
 	private final TokenList m_tokens = new TokenList();//this is where all tokens get assembled while parsing
@@ -92,6 +256,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 	private final ArrayList<Annotation> m_annotations = new ArrayList<>();//temporary storage of annotations
 	private final ArrayList<BlueModule> m_moduleStack = new ArrayList<>();//keeps track of the current module that the token being currently processed is within.
 	private final ArrayList<BlueModule> m_modules = new ArrayList<>();
+	private MessageField m_message = null;
 	private final ArrayList<IdentifierToken> m_moduleEnd = new ArrayList<>();
 	private String m_fileName = null;//indicates the filename that the present tokens are from
 	private String m_lastComment = null;//temporary storage for the last processed comment
@@ -131,44 +296,78 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		
 
 	}
+	public void append(String filePath, String[] schemaLines) {
+		if(m_ver == VERSION_3) {
+			appendV3(filePath, schemaLines);
+		} else if(m_ver == VERSION_4) {
+			appendV4(filePath, schemaLines);
+		}
+	}
 	/**
 	 * this reads through the contents of a file and adds tokens to the current token list
 	 * @param filePath - a string of the file path of this file
 	 * @param schema - a string containing the schema to parse
 	 */
-	public void append(String filePath, String[] schemaLines) {
+	private void appendV3(String filePath, String[] schemaLines) {
 		//split into lines
 
 
 		FilePathToken fpt = new FilePathToken(filePath, schemaLines);
 		
 		Coord c = m_tokens.add(fpt).getStart();
-		if(m_ver == VERSION_4) {
-			if(!fpt.getPathElementFromEnd(1).toLowerCase().equals("msg")) {
-				m_log.issueError("Expecting messge files to be in a directory called \"msg\"", fpt.getStart());
-			}
-		}
-				
+						
 
 		while(c != null) {
-			if(m_ver == VERSION_3) {
-				c = processV3BlockComment(c);
-				c = processV3LineComment(c);
-			} else if(m_ver == VERSION_4) {
-				
-				
-				c = processV4Comment(c);
-			}
+			c = processV3BlockComment(c);
+			c = processV3LineComment(c);
+			
 			c = processStrings(c, STRING_DELIMITER);
 			c = processStrings(c, "'");//for v4 strings are valid to be enclosed in single quotes too
 			c = processChars(c);
-			c = processNextToken(c);
+			c = processNextWordToken(c, VERSION_3_IDENTIFIERS, VERSION_3_SEPARATORS);
+//			
 			c = processEol(c);
 			
 
 		}
 	
 	}
+	/**
+	 * this reads through the contents of a file and adds tokens to the current token list
+	 * @param filePath - a string of the file path of this file
+	 * @param schema - a string containing the schema to parse
+	 */
+	private void appendV4(String filePath, String[] schemaLines) {
+		//split into lines
+
+
+		FilePathToken fpt = new FilePathToken(filePath, schemaLines);
+		
+		Coord c = m_tokens.add(fpt).getStart();
+		if(!fpt.getPathElementFromEnd(1).toLowerCase().equals("msg")) {
+			m_log.issueError("Expecting messge files to be in a directory called \"msg\"", fpt.getStart());
+		}
+						
+
+		while(c != null) {
+			
+				
+			c = processV4Comment(c);
+			
+			c = processStrings(c, TokenIdentifier.DOUBLE_QUOTE.id());
+			c = processStrings(c, TokenIdentifier.SINGLE_QUOTE.id());//for v4 strings are valid to be enclosed in single quotes too
+//			c = processChars(c);
+			c = processNextWordToken(c, VERSION_4_IDENTIFIERS, VERSION_4_SEPARATORS);
+
+			c = processEol(c);
+			
+
+		}
+	
+	}
+
+	
+
 	/**
 	 * scans through the token list and generates a full set of constants, defines and message fields from it.
 	 */
@@ -192,12 +391,13 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		System.out.println("BlueberrySchemaParser.parse done.");
 	}
 	private void parseV4() {
-		collapseIdentifiers();
-		collapseLessThanOrEqualTo();
+//		collapseIdentifiers(VERSION_4_IDENTIFIERS);
+//		collapseLessThanOrEqualTo();
 		collapseNumbers();
+		collapseBaseTypes(VERSION_4_BASE_TYPES);
 		collapseSymbolNames();
 		//need to convert any symbol names to scope names if they contain a "/"
-		collapseBaseTypes();
+		
 		collapseWhiteSpace();
 		collapseComments();
 		removeSemicolons();//there shouldn't be semicolons but remove just in case
@@ -218,11 +418,11 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 
 	private void parseV3() {
 		
-		collapseIdentifiers();
+		collapseIdentifiers(VERSION_3_IDENTIFIERS);
 		collapseNumbers();
 		collapseSymbolNames();
 		collapseLongLong();
-		collapseBaseTypes();
+		collapseBaseTypes(VERSION_3_BASE_TYPES);
 		collapseScope();
 		collapseWhiteSpace();
 		collapseUnsigned();
@@ -778,8 +978,8 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		while(m_tokens.isMore()) {
 			IdentifierToken w = m_tokens.relativeId(0,TokenIdentifier.SPACE);
 			if(w != null) {
-				IdentifierToken tNext = m_tokens.relativeId(1, TokenIdentifier.SCOPE_SEPARATOR);
-				IdentifierToken tPrev = m_tokens.relativeId(-1, TokenIdentifier.SCOPE_SEPARATOR);
+				IdentifierToken tNext = m_tokens.relativeId(1, TokenIdentifier.DOUBLE_COLON);
+				IdentifierToken tPrev = m_tokens.relativeId(-1, TokenIdentifier.DOUBLE_COLON);
 				if(tNext != null || tPrev != null) {
 					m_tokens.next();
 				} else {
@@ -810,7 +1010,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 	private void collapseScope() {
 		m_tokens.resetIndex();
 		while(m_tokens.isMore()) {
-			IdentifierToken s = m_tokens.gotoNextId(TokenIdentifier.SCOPE_SEPARATOR);
+			IdentifierToken s = m_tokens.gotoNextId(TokenIdentifier.DOUBLE_COLON);
 			if(s != null) {
 				SymbolNameToken tName = m_tokens.relative(1, SymbolNameToken.class);
 				ScopeNameToken tScopeBefore = m_tokens.relative(-1, ScopeNameToken.class);
@@ -977,7 +1177,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 					default:
 						m_log.issueError("Unsigned keyword makes no sense combined with "+btt.getName(), btt.getStart());
 					}
-					BaseTypeToken newBtt = BaseTypeToken.makeNew(new IdentifierToken(it.getStart(), btt.getEnd(), newTi), m_ver == VERSION_4);
+					BaseTypeToken newBtt = BaseTypeToken.makeNew(new IdentifierToken(it.getStart(), btt.getEnd(), newTi));
 					m_tokens.replace(btt, newBtt);
 					m_tokens.remove(it);
 				}
@@ -998,8 +1198,10 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 
 		while(m_tokens.isMore()) {
 			Token t = m_tokens.getCurrent();
-			BaseTypeToken bt = m_tokens.getCurrentAs(BaseTypeToken.class);
-			SymbolNameToken st = m_tokens.getCurrentAs(SymbolNameToken.class);
+			BaseTypeToken typeType = m_tokens.getCurrentAs(BaseTypeToken.class);
+			SymbolNameToken typeName = m_tokens.getCurrentAs(SymbolNameToken.class);
+			SymbolNameToken fieldName = m_tokens.relative(1, SymbolNameToken.class);
+			
 			EolToken eol = m_tokens.findNext(t, EolToken.class);//this is the end of the line
 			IdentifierToken eq = m_tokens.findNextId(t, eol, TokenIdentifier.EQUALS);
 			
@@ -1008,25 +1210,80 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 			//look for square brackets indicating an array
 			IdentifierToken cb = ob == null ? null : m_tokens.matchBracket(ob);
 			IdentifierToken lte = cb == null ? null : m_tokens.findNextId(ob, cb, TokenIdentifier.LESS_THAN_OR_EQUALS);
-			NumberToken nt = cb == null ? null : m_tokens.findNext(ob, cb, NumberToken.class);
-			SymbolNameToken snt = cb == null ? null : m_tokens.findNext(ob, cb, SymbolNameToken.class);
+			NumberToken arraySizeNumber = cb == null ? null : m_tokens.findNext(ob, cb, NumberToken.class);
 			
 			//look for a value that indicates either a default or constant value
-			NumberToken v = m_tokens.findNext(m_tokens.getLastNonNull(eq, cb), eol, NumberToken.class);
-			SymbolNameToken nv = m_tokens.findNext(m_tokens.getLastNonNull(eq, cb), eol, SymbolNameToken.class);
+			NumberToken valueNumber = m_tokens.findNext(m_tokens.getLastNonNull(eq, cb), eol, NumberToken.class);
+			SymbolNameToken valueName = m_tokens.findNext(m_tokens.getLastNonNull(eq, cb), eol, SymbolNameToken.class);
+			//this is an array of base types
+ 			boolean fixed = arraySizeNumber != null && lte == null;
+			int n = 0;
+			if(arraySizeNumber != null) {
+				n = arraySizeNumber.getNumber().asInt();
 			
+			}
+			ArrayField af = cb == null ? null :new ArrayField(fieldName.getSymbolName(), null, new int[] {n}, fixed, m_lastComment, typeType.getStart());
+
 			
-			if(bt != null) {
+			if(typeType != null) {
+				
+				 if(typeType.check(TokenIdentifier.STRING)) {
+					//it's a string or an array of strings
+					//the line will look like this
+					//[base type string][symbol name][<=][number][=][string]
+	
+					//check for a default or constant value
+					StringToken s = m_tokens.findNext(typeType, eol, StringToken.class);
+					//check for bounding on the string size
+					Token backstop = m_tokens.getFirstNonNull(eol, s, ob);
+					IdentifierToken slte = m_tokens.findNextId(fieldName, backstop,TokenIdentifier.LESS_THAN_OR_EQUALS);
+					NumberToken ss = slte == null ? null : m_tokens.findNext(slte, backstop, NumberToken.class);
+					int m = 0;
+					if(ss != null) {
+						m = ss.getNumber().asInt();
+					}
+					//this is just a string
+					
+					if(eq != null) {
+						//this is a string constant
+					} else if(af != null) {
+						//this is an array of strings
+						
+						
+						StringField sf = new StringField(null, null, m, m_lastComment, typeType.getStart());
+						af.add(sf);
+						m_message.add(af);
+					} else {
+						
+						StringField sf = new StringField(fieldName.getSymbolName(), null, m, m_lastComment, typeType.getStart());
+						m_message.add(sf);
+					}
 				//this is either a base type field or constant, or perhaps an array or sequence
-				if(eq != null) {
+				 } else if(eq != null) {
 					//it's a constant
-					if(cb != null) {
+					if(af != null) {
 						//there's an array bracket and that should not be a constant
 						m_log.issueError("Can't have a constant array, sorry.", ob.getStart());
 					}
+				
+		 		} else if(af != null) {
+					BaseField bf = new BaseField(null, lookupBaseType(typeType.getKeyword()), m_lastComment, typeType.getStart());
+					af.add(bf);
+					m_message.add(af);
+				} else {
+					//this a normal base type
+					BaseField bf = new BaseField(fieldName.getSymbolName(), lookupBaseType(typeType.getKeyword()), m_lastComment, typeType.getStart());
+					m_message.add(bf);
 				}
-			} else if(st != null) {
+			} else if(typeName != null) {
 				//this is either a struct field or a struct array, or struct sequence
+				//in v4 this means the type is defined by another message
+				if(af != null) {
+					//it's an array of structs (messages)
+					m_message.add(af);
+				} else {
+					//it's just a struct
+				}
 				
 			} else if(t instanceof FilePathToken) {
 				FilePathToken fpt = (FilePathToken)t;
@@ -1035,7 +1292,11 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 				m_moduleStack.clear();
 				m_moduleStack.add(BlueModule.ROOT);
 				//for now assume that the name of the directory containing the msg folder is the package (or module as I'm calling it)
+				//also, the file name is the message name
 				m_moduleStack.add(new BlueModule(ScopeName.make(SymbolName.Case.LOWER_SNAKE, "/", fpt.getPathElementFromEnd(1)), fpt.getStart()));
+				ScopeName sn = m_moduleStack.getLast().scope(SymbolName.parse(Case.LOWER_SNAKE, fpt.getPathElementFromEnd(0)));
+				m_message = new MessageField(SymbolName.EMPTY, sn, m_lastComment, t.getStart());
+				m_moduleStack.getLast().getMessages().add(m_message);
 				m_moduleEnd.clear();
 			} else if(t instanceof CommentToken) {
 				CommentToken ct = (CommentToken)t;
@@ -1459,7 +1720,8 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 					for(int j = 0; j < dims.size(); ++j) {
 						ds[j] = dims.get(j);
 					}
-					pf = new ArrayField(null, scopedName, id, ds, m_lastComment, name.getEnd());
+					pf = new ArrayField(null, scopedName, ds, true, m_lastComment, name.getEnd());
+					
 					pf.setFileName(m_fileName);
 					
 		
@@ -1778,12 +2040,15 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 	TypeId lookupBaseType(TokenIdentifier bt) {
 		TypeId result = null;
 		switch(bt) {
+		case BOOL:
 		case BOOLEAN:
 			result = TypeId.BOOL;
 			break;
 		case FLOAT:
+		case FLOAT32:
 			result = TypeId.FLOAT32;
 			break;
+		case FLOAT64:
 		case DOUBLE:
 			result = TypeId.FLOAT64;
 			break;
@@ -1895,13 +2160,13 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 	/**
 	 * replace any single word tokens that match token identifiers with identifier tokens
 	 */
-	private void collapseIdentifiers() {
+	private void collapseIdentifiers(TokenIdentifier...ids) {
 		m_tokens.resetIndex();
 		while(m_tokens.isMore()){
 			//first find next define element
 			SingleWordToken swt = m_tokens.gotoNext(SingleWordToken.class);
 			if(swt != null) {
-				for(TokenIdentifier ti : TokenIdentifier.values()) {
+				for(TokenIdentifier ti : ids) {
 					if(ti.id().toLowerCase().equals(swt.getName().toLowerCase())) {
 						IdentifierToken it = new IdentifierToken(swt.getStart(), swt.getEnd(), ti);
 						m_tokens.replace(swt, it);
@@ -2115,14 +2380,14 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 				IdentifierToken it = m_tokens.relative(-1, IdentifierToken.class);
 
 				if(it != null) {
-					if(it.check(TokenIdentifier.BRACE_END,
-							TokenIdentifier.BRACE_START,
-							TokenIdentifier.BRACKET_END,
-							TokenIdentifier.BRACKET_START,
+					if(it.check(
+//							TokenIdentifier.BRACE_END,
+//							TokenIdentifier.BRACE_START,
+//							TokenIdentifier.BRACKET_END,
+//							TokenIdentifier.BRACKET_START,
 							TokenIdentifier.COMMA,
 							TokenIdentifier.SQUARE_BRACKET_END,
-							TokenIdentifier.SQUARE_BRACKET_START,
-							TokenIdentifier.SEMICOLON
+							TokenIdentifier.SQUARE_BRACKET_START
 					)) {
 						m_tokens.remove(et);
 					} else {
@@ -2205,13 +2470,13 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 	/**
 	 * Scan through all tokens and those Id tokens whose IDs represent base types re converted to base types
 	 */
-	private void collapseBaseTypes() {
+	private void collapseBaseTypes(TokenIdentifier[] ids) {
 		m_tokens.resetIndex();
 		while(m_tokens.isMore()) {
-			IdentifierToken it = m_tokens.gotoNext(IdentifierToken.class);
+			IdentifierToken it = m_tokens.gotoNextId(ids);
 			if(it != null) {
 
-				BaseTypeToken btt = BaseTypeToken.makeNew(it, m_ver == VERSION_4);
+				BaseTypeToken btt = BaseTypeToken.makeNew(it);
 				
 				if(btt == null) {
 				} else {
@@ -2231,30 +2496,81 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		}
 		return result;
 	}
-	private Coord processNextToken(Coord c) {
+	/**
+	 * Scans to the next eol or specified token identifier
+	 * adds everything in between as a single word token or an identifier token
+	 * This assumes we are current not at an id token
+	 * @param c - the starting coordingate
+	 * @param ids - the total list of identifier tokens that we want to look for
+	 * @param separator - an array of token identifiers that would follow a single word token or token identifier
+	 * @return
+	 */
+	private Coord processNextWordToken(Coord c, TokenIdentifier[] ids, TokenIdentifier[] separators) {
+		Coord result = c;
+		Token t = null;
+		while(true) {
+			
+			TokenIdentifier sep = result.findMatch(separators);
+			if(sep != null || result.isEol()) {
+				if(sep != null && result == c) {
+					//the very first element is a separator so add it
+					t = new IdentifierToken(c, sep);
+				} else {
+					//we've got a token worth of stuff
+					//now see if it's an it or swt
+					TokenIdentifier mid = c.findMatch(result, ids);
+					if(mid != null) {
+						t = new IdentifierToken(c, mid);
+					} else if(c != result){
+						t = new SingleWordToken(c, result);
+					}
+					
+				}
+				if(t != null) {
+					m_tokens.add(t);
+					result = t.getEnd();
+					break;
+				} else if(result.isEol()) {
+					break;
+				}
+				
+			}
+			result = result.incrementIndex(1);
+		}
+		return result;
+	}
+	/**
+	 * we know that the current coordinate is not a comment, string or character
+	 * If this line starts with a valid token identifier then add it
+	 * @param c
+	 * @param ids
+	 * @return
+	 */
+	private Coord processTokenIdentifier(Coord c, TokenIdentifier[] ids) {
+		Coord result = c;
+		
+		TokenIdentifier id = c.findMatch(ids);
+		if(id != null) {
+			IdentifierToken it = new IdentifierToken(c, id);
+			m_tokens.add(it);
+			result = it.getEnd();
+		}
+		
+		return result;
+	}
+	/**
+	 * advances to the next token identifier
+	 * @param c
+	 * @param ids
+	 * @return
+	 */
+	private Coord processNextToken(Coord c, TokenIdentifier[] ids) {
 		if(c.isEol()) {
 			return c;
 		}
 		Coord start = c;//c.trim();
 		//now advance to the next interesting token
-		Coord result = start.advanceToNext( //the following elements are sensitive to order. For example the scope separator must be tested before the colon
-				TokenIdentifier.SPACE,
-				TokenIdentifier.TAB,
-				TokenIdentifier.BRACE_START,
-				TokenIdentifier.BRACE_END,
-				TokenIdentifier.BRACKET_START,
-				TokenIdentifier.BRACKET_END,
-				TokenIdentifier.SQUARE_BRACKET_START,
-				TokenIdentifier.SQUARE_BRACKET_END,
-				TokenIdentifier.ANGLE_BRACKET_START,
-				TokenIdentifier.ANGLE_BRACKET_END,
-				TokenIdentifier.SCOPE_SEPARATOR,
-				TokenIdentifier.COLON,
-				TokenIdentifier.EQUALS,
-				TokenIdentifier.ANNOTATION_START,
-				TokenIdentifier.SEMICOLON,
-				TokenIdentifier.COMMA
-				);
+		Coord result = start.advanceToNext(ids);
 		Coord end = result;
 		
 		
@@ -2388,7 +2704,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 			Coord end = start;
 			boolean notDone = true;
 			while(notDone) {
-				Coord r = result.findNext(STRING_DELIMITER, STRING_ESCAPE_DELIMITER);
+				Coord r = result.findNext(delimiter, STRING_ESCAPE_DELIMITER);
 				if(r == null) {
 					System.out.println("BlueberrySchemaParser.processStrings");
 				}

@@ -108,9 +108,16 @@ public interface MultipleField extends Field {
 
 	/**
 	 * the size of this array, i.e. the number of elements
+	 * If this field is not fixed, then this represents the maximum bounds
 	 * @return
 	 */
 	public int[] getNumber();
+	
+	/**
+	 * indicates whether this field is fixed in size or whether it can change its size
+	 * @return
+	 */
+	public boolean isFixed();
 	
 
 

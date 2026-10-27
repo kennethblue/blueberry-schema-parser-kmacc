@@ -27,60 +27,17 @@ import com.bluerobotics.blueberry.schema.parser.tokens.TokenConstants.TokenIdent
  * A token that represents a base type
  */
 public class BaseTypeToken extends IdentifierToken {
-	private static final TokenIdentifier[] BASE_TYPES_V4 = {
-			TokenIdentifier.BOOL,
-			TokenIdentifier.CHAR,
-			TokenIdentifier.BYTE,
-			TokenIdentifier.FLOAT32,
-			TokenIdentifier.FLOAT64,
-			TokenIdentifier.INT,
-			TokenIdentifier.INT16,
-			TokenIdentifier.INT32,
-			TokenIdentifier.INT64,
-			TokenIdentifier.INT8,
-			TokenIdentifier.UINT16,
-			TokenIdentifier.UINT32,
-			TokenIdentifier.UINT64,
-			TokenIdentifier.UINT8,
-			TokenIdentifier.STRING,
-		};
 	
-	private static final TokenIdentifier[] BASE_TYPES_V3 = {
-			TokenIdentifier.BOOLEAN,
-			TokenIdentifier.CHAR,
-			TokenIdentifier.BYTE,
-			TokenIdentifier.DOUBLE,
-			TokenIdentifier.FLOAT,
-			TokenIdentifier.INT,
-			TokenIdentifier.INT16,
-			TokenIdentifier.INT32,
-			TokenIdentifier.INT64,
-			TokenIdentifier.INT8,
-			TokenIdentifier.UINT16,
-			TokenIdentifier.UINT32,
-			TokenIdentifier.UINT64,
-			TokenIdentifier.UINT8,
-			TokenIdentifier.LONG,
-			TokenIdentifier.LONG_LONG,
-			TokenIdentifier.SHORT,
-			TokenIdentifier.UNSIGNED,
-			TokenIdentifier.STRING,
-		};
 	protected BaseTypeToken( IdentifierToken it) {
 		super(it.getStart(), it.getEnd(), it.getKeyword());
 	}
 	
-	public static BaseTypeToken makeNew(IdentifierToken it, boolean v4Not3) {
+	public static BaseTypeToken makeNew(IdentifierToken it) {
 		BaseTypeToken result = null;
-		if(v4Not3) {
-			if(isValid(BASE_TYPES_V4, it.getKeyword())) {
-				result = new BaseTypeToken(it);
-			}
-		} else {
-			if(isValid(BASE_TYPES_V3, it.getKeyword())) {
-				result = new BaseTypeToken(it);
-			}
-		}
+		
+		result = new BaseTypeToken(it);
+			
+		
 		return result;
 	}
 		

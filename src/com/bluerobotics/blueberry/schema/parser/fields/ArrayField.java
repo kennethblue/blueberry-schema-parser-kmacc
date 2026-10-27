@@ -30,7 +30,7 @@ import com.bluerobotics.blueberry.schema.parser.types.TypeId;
 
 /**
  * This defines an array field
- * Note that in this case, the name of the array type is the field name. The type that this field is an array of is the type name
+ * the contents of the array will be specified by the child of this array
  */
 public class ArrayField extends ParentField implements MultipleField {
 	@Override
@@ -47,10 +47,21 @@ public class ArrayField extends ParentField implements MultipleField {
 		return result;
 	}
 	private final int[] m_number;
-
-	public ArrayField(SymbolName name, ScopeName typeName,  TypeId typeId, int[] number, String comment, Coord c) {
+	private final boolean m_fixed;
+	/**
+	 * makes an array field with the specified name, typeName, typeId, etc
+	 * 
+	 * @param name - the name of the field
+	 * @param typeName - if this defines a type then this field specifies the name
+	 * @param number - the number of elements if fixed or bounded, 0 or less if unbounded
+	 * @param fixed - true means fixed. false means either bounded or unbounded
+	 * @param comment - the description of this field derived from the comments
+	 * @param c - the starting location in the schema files that defined this field
+	 */
+	public ArrayField(SymbolName name, ScopeName typeName,   int[] number, boolean fixed, String comment, Coord c) {
 		super(name, typeName, TypeId.ARRAY, comment, c);
 		m_number = number;
+		m_fixed = fixed;
 	}
 	@Override
 	public int[] getNumber() {
@@ -79,7 +90,7 @@ public class ArrayField extends ParentField implements MultipleField {
 	}
 	@Override
 	public Field makeInstance(SymbolName name) {
-		ArrayField f = new ArrayField(name, getTypeName(), getTypeId(), getNumber(), getComment(), getCoord());
+		ArrayField f = new ArrayField(name, getTypeName(), getTypeId(), getNumber(), isFixed(), getComment(), getCoord());
 		f.copyChildrenFrom(this);
 		return f;
 	}
@@ -90,6 +101,10 @@ public class ArrayField extends ParentField implements MultipleField {
 	@Override
 	public int getPaddedByteCount() {
 		return getBitCount()/8;
+	}
+	@Override
+	public boolean isFixed() {
+		return m_fixed;
 	}
 
 
