@@ -1198,9 +1198,9 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 
 		while(m_tokens.isMore()) {
 			Token t = m_tokens.getCurrent();
-			BaseTypeToken typeType = m_tokens.getCurrentAs(BaseTypeToken.class);
+			BaseTypeToken baseType = m_tokens.getCurrentAs(BaseTypeToken.class);
 			SymbolNameToken typeName = m_tokens.getCurrentAs(SymbolNameToken.class);
-			SymbolNameToken fieldName = m_tokens.relative(1, SymbolNameToken.class);
+			
 			
 			EolToken eol = m_tokens.findNext(t, EolToken.class);//this is the end of the line
 			IdentifierToken eq = m_tokens.findNextId(t, eol, TokenIdentifier.EQUALS);
@@ -1212,6 +1212,10 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 			IdentifierToken lte = cb == null ? null : m_tokens.findNextId(ob, cb, TokenIdentifier.LESS_THAN_OR_EQUALS);
 			NumberToken arraySizeNumber = cb == null ? null : m_tokens.findNext(ob, cb, NumberToken.class);
 			
+			
+			SymbolNameToken fieldName = m_tokens.findNext(m_tokens.getLastNonNull(baseType, cb),m_tokens.getFirstNonNull(eol, eq), SymbolNameToken.class);
+			
+			
 			//look for a value that indicates either a default or constant value
 			NumberToken valueNumber = m_tokens.findNext(m_tokens.getLastNonNull(eq, cb), eol, NumberToken.class);
 			SymbolNameToken valueName = m_tokens.findNext(m_tokens.getLastNonNull(eq, cb), eol, SymbolNameToken.class);
@@ -1222,18 +1226,18 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 				n = arraySizeNumber.getNumber().asInt();
 			
 			}
-			ArrayField af = cb == null ? null :new ArrayField(fieldName.getSymbolName(), null, new int[] {n}, fixed, m_lastComment, typeType.getStart());
+			ArrayField af = (cb == null || fieldName == null || baseType == null) ? null :new ArrayField(fieldName.getSymbolName(), null, new int[] {n}, fixed, m_lastComment, baseType.getStart());
 
 			
-			if(typeType != null) {
+			if(baseType != null) {
 				
-				 if(typeType.check(TokenIdentifier.STRING)) {
+				 if(baseType.check(TokenIdentifier.STRING)) {
 					//it's a string or an array of strings
 					//the line will look like this
 					//[base type string][symbol name][<=][number][=][string]
 	
 					//check for a default or constant value
-					StringToken s = m_tokens.findNext(typeType, eol, StringToken.class);
+					StringToken s = m_tokens.findNext(baseType, eol, StringToken.class);
 					//check for bounding on the string size
 					Token backstop = m_tokens.getFirstNonNull(eol, s, ob);
 					IdentifierToken slte = m_tokens.findNextId(fieldName, backstop,TokenIdentifier.LESS_THAN_OR_EQUALS);
@@ -1250,13 +1254,15 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 						//this is an array of strings
 						
 						
-						StringField sf = new StringField(null, null, m, m_lastComment, typeType.getStart());
+						StringField sf = new StringField(null, null, m, m_lastComment, baseType.getStart());
 						af.add(sf);
 						m_message.add(af);
+						m_tokens.gotoEol();
 					} else {
 						
-						StringField sf = new StringField(fieldName.getSymbolName(), null, m, m_lastComment, typeType.getStart());
+						StringField sf = new StringField(fieldName.getSymbolName(), null, m, m_lastComment, baseType.getStart());
 						m_message.add(sf);
+						m_tokens.gotoEol();
 					}
 				//this is either a base type field or constant, or perhaps an array or sequence
 				 } else if(eq != null) {
@@ -1264,26 +1270,44 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 					if(af != null) {
 						//there's an array bracket and that should not be a constant
 						m_log.issueError("Can't have a constant array, sorry.", ob.getStart());
+					} else {
+						Number num = valueNumber.getNumber();
+						NumberConstant nc = new NumberConstant(lookupBaseType(baseType.getKeyword()), fieldName.getSymbolName(), num, m_lastComment);
+						m_modules.getLast().addConstant(nc);
 					}
-				
+					m_tokens.gotoEol();
+
 		 		} else if(af != null) {
-					BaseField bf = new BaseField(null, lookupBaseType(typeType.getKeyword()), m_lastComment, typeType.getStart());
+					BaseField bf = new BaseField(null, lookupBaseType(baseType.getKeyword()), m_lastComment, baseType.getStart());
 					af.add(bf);
 					m_message.add(af);
+					m_tokens.gotoEol();
+
 				} else {
 					//this a normal base type
-					BaseField bf = new BaseField(fieldName.getSymbolName(), lookupBaseType(typeType.getKeyword()), m_lastComment, typeType.getStart());
+					BaseField bf = new BaseField(fieldName.getSymbolName(), lookupBaseType(baseType.getKeyword()), m_lastComment, baseType.getStart());
 					m_message.add(bf);
+					m_tokens.gotoEol();
+
 				}
+				m_lastComment = null;
 			} else if(typeName != null) {
 				//this is either a struct field or a struct array, or struct sequence
 				//in v4 this means the type is defined by another message
+				DefinedTypeField df = new DefinedTypeField(fieldName.getSymbolName(), m_modules.getLast().scope(typeName.getSymbolName()), m_lastComment, typeName.getStart());
 				if(af != null) {
 					//it's an array of structs (messages)
+					af.add(df);
 					m_message.add(af);
+					m_tokens.gotoEol();
+
 				} else {
 					//it's just a struct
+					m_message.add(df);
+					m_tokens.gotoEol();
+
 				}
+				m_lastComment = null;
 				
 			} else if(t instanceof FilePathToken) {
 				FilePathToken fpt = (FilePathToken)t;
@@ -1291,10 +1315,21 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 				m_imports.clear();
 				m_moduleStack.clear();
 				m_moduleStack.add(BlueModule.ROOT);
+				String msgName = fpt.getPathElementFromEnd(0).replace(".msg", "");//this should strip off the msg file extension
 				//for now assume that the name of the directory containing the msg folder is the package (or module as I'm calling it)
 				//also, the file name is the message name
-				m_moduleStack.add(new BlueModule(ScopeName.make(SymbolName.Case.LOWER_SNAKE, "/", fpt.getPathElementFromEnd(1)), fpt.getStart()));
-				ScopeName sn = m_moduleStack.getLast().scope(SymbolName.parse(Case.LOWER_SNAKE, fpt.getPathElementFromEnd(0)));
+
+				BlueModule m = new BlueModule(ScopeName.make(SymbolName.Case.LOWER_SNAKE, "/", fpt.getPathElementFromEnd(2)), fpt.getStart());
+				int i = m_modules.indexOf(m);
+				if(i >= 0) {
+					m = m_modules.get(i);
+				} else {
+					
+					m_modules.add(m);
+				}
+				
+				m_moduleStack.add(m);
+				ScopeName sn = m_moduleStack.getLast().scope(SymbolName.parse(Case.UPPER_CAMEL, msgName));
 				m_message = new MessageField(SymbolName.EMPTY, sn, m_lastComment, t.getStart());
 				m_moduleStack.getLast().getMessages().add(m_message);
 				m_moduleEnd.clear();
@@ -2242,7 +2277,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 
 			if(swt == null && snt == null) {
 				m_log.issueError("Annotation symbol should be followed by a name", at.getEnd());
-				m_tokens.gotoEol();
+				m_tokens.gotoSemi();
 			} else if(bracketStart == null) {
 				noBrackets = true;
 			} else if(bracketEnd == null) {

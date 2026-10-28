@@ -21,8 +21,6 @@ THE SOFTWARE.
 */
 package com.bluerobotics.blueberry.schema.parser.constants;
 
-import java.math.BigDecimal;
-
 import com.bluerobotics.blueberry.schema.parser.fields.SymbolName;
 import com.bluerobotics.blueberry.schema.parser.types.BaseType;
 import com.bluerobotics.blueberry.schema.parser.types.TypeId;

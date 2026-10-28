@@ -90,7 +90,7 @@ public class ArrayField extends ParentField implements MultipleField {
 	}
 	@Override
 	public Field makeInstance(SymbolName name) {
-		ArrayField f = new ArrayField(name, getTypeName(), getTypeId(), getNumber(), isFixed(), getComment(), getCoord());
+		ArrayField f = new ArrayField(name, getTypeName(), getNumber(), isFixed(), getComment(), getCoord());
 		f.copyChildrenFrom(this);
 		return f;
 	}

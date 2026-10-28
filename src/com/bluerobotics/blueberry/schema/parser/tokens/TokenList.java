@@ -741,12 +741,12 @@ public class TokenList {
 	}
 
 
-	public void gotoSemi() {
-		gotoNextId(TokenIdentifier.SEMICOLON);
+	public void gotoEol() {
+		gotoNext(EolToken.class);
 	}
 
 
-	public void gotoEol() {
+	public void gotoSemi() {
 		gotoNextId(TokenIdentifier.SEMICOLON);
 	}
 
