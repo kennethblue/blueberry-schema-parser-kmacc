@@ -59,6 +59,10 @@ public abstract class AbstractConstant<T> implements Constant<T> {
 	public String getFileName() {
 		return m_fileName;
 	}
+	@Override
+	public String toString() {
+		return getClass().getSimpleName()+"("+getName()+" = "+getValue()+")";
+	}
 	
 	
 }

@@ -31,7 +31,7 @@ import com.bluerobotics.blueberry.schema.parser.fields.SymbolName;
 public class BaseType extends AbstractType {
 	private static final HashMap<TypeId,BaseType> BASE_TYPES = new HashMap<>();
 	private BaseType(TypeId id) {
-		super(id, SymbolName.fromCamel(id.name()),"");
+		super(id, SymbolName.fromSnake(id.name()),"");
 	}
 	public static BaseType getBaseType(TypeId id) {
 		BaseType bt = BASE_TYPES.get(id);

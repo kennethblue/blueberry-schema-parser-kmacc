@@ -29,6 +29,14 @@ import com.bluerobotics.blueberry.schema.parser.types.TypeId;
  */
 public class DeferredField extends AbstractField {
 	private final ScopeName[] m_imports;
+	/**
+	 * Creates a new deferred field
+	 * @param name - the name of the field
+	 * @param type - the name of the type of the field
+	 * @param imports - a list of possible places to import from
+	 * @param comment - the field comment
+	 * @param c - the location in the source schema file that defined this field
+	 */
 	public DeferredField(SymbolName name, ScopeName type, ScopeName[] imports, String comment, Coord c) {
 		super(name, type, TypeId.DEFERRED, comment, c);
 		m_imports = imports;

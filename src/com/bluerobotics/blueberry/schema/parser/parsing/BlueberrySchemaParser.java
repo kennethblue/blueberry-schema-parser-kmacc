@@ -410,6 +410,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		
 		assembleFieldsV4();
 
+		processDeferredFields(m_messages.getIterator(), m_messages);
 		
 		
 	}
@@ -976,7 +977,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		//remove all spaces followed by tokens that should not be a problem
 		m_tokens.resetIndex();
 		while(m_tokens.isMore()) {
-			IdentifierToken w = m_tokens.relativeId(0,TokenIdentifier.SPACE);
+			IdentifierToken w = m_tokens.relativeId(0,TokenIdentifier.SPACE, TokenIdentifier.TAB);
 			if(w != null) {
 				IdentifierToken tNext = m_tokens.relativeId(1, TokenIdentifier.DOUBLE_COLON);
 				IdentifierToken tPrev = m_tokens.relativeId(-1, TokenIdentifier.DOUBLE_COLON);
@@ -1250,6 +1251,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 					
 					if(eq != null) {
 						//this is a string constant
+						//TODO: do this part
 					} else if(af != null) {
 						//this is an array of strings
 						
@@ -1294,7 +1296,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 			} else if(typeName != null) {
 				//this is either a struct field or a struct array, or struct sequence
 				//in v4 this means the type is defined by another message
-				DefinedTypeField df = new DefinedTypeField(fieldName.getSymbolName(), m_modules.getLast().scope(typeName.getSymbolName()), m_lastComment, typeName.getStart());
+				DeferredField df = new DeferredField(fieldName.getSymbolName(), m_modules.getLast().scope(typeName.getSymbolName()), null, m_lastComment, typeName.getStart());
 				if(af != null) {
 					//it's an array of structs (messages)
 					af.add(df);
@@ -1332,6 +1334,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 				ScopeName sn = m_moduleStack.getLast().scope(SymbolName.parse(Case.UPPER_CAMEL, msgName));
 				m_message = new MessageField(SymbolName.EMPTY, sn, m_lastComment, t.getStart());
 				m_moduleStack.getLast().getMessages().add(m_message);
+				m_messages.add(m_message);
 				m_moduleEnd.clear();
 			} else if(t instanceof CommentToken) {
 				CommentToken ct = (CommentToken)t;
