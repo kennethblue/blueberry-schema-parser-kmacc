@@ -226,7 +226,8 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		TokenIdentifier.SQUARE_BRACKET_END,
 		TokenIdentifier.LESS_THAN_OR_EQUALS,
 		TokenIdentifier.EQUALS,
-		TokenIdentifier.COMMA
+		TokenIdentifier.COMMA,
+		TokenIdentifier.FORWARD_SLASH
 	};
 	private static final TokenIdentifier[] VERSION_4_BASE_TYPES = {
 		TokenIdentifier.BOOL,
@@ -397,7 +398,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		collapseBaseTypes(VERSION_4_BASE_TYPES);
 		collapseSymbolNames();
 		//need to convert any symbol names to scope names if they contain a "/"
-		
+		collapseScope(TokenIdentifier.FORWARD_SLASH);
 		collapseWhiteSpace();
 		collapseComments();
 		removeSemicolons();//there shouldn't be semicolons but remove just in case
@@ -424,7 +425,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 		collapseSymbolNames();
 		collapseLongLong();
 		collapseBaseTypes(VERSION_3_BASE_TYPES);
-		collapseScope();
+		collapseScope(TokenIdentifier.DOUBLE_COLON);
 		collapseWhiteSpace();
 		collapseUnsigned();
 		collapseComments();
@@ -1008,10 +1009,10 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 	/**
 	 * scan through tokens looking for a scope separator beside a single word token
 	 */
-	private void collapseScope() {
+	private void collapseScope(TokenIdentifier separator) {
 		m_tokens.resetIndex();
 		while(m_tokens.isMore()) {
-			IdentifierToken s = m_tokens.gotoNextId(TokenIdentifier.DOUBLE_COLON);
+			IdentifierToken s = m_tokens.gotoNextId(separator);
 			if(s != null) {
 				SymbolNameToken tName = m_tokens.relative(1, SymbolNameToken.class);
 				ScopeNameToken tScopeBefore = m_tokens.relative(-1, ScopeNameToken.class);
@@ -1296,7 +1297,14 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 			} else if(typeName != null) {
 				//this is either a struct field or a struct array, or struct sequence
 				//in v4 this means the type is defined by another message
-				DeferredField df = new DeferredField(fieldName.getSymbolName(), m_modules.getLast().scope(typeName.getSymbolName()), null, m_lastComment, typeName.getStart());
+				SymbolName stn = typeName.getSymbolName();
+				ScopeName tn = null;
+				if(stn instanceof ScopeName) {
+					tn = (ScopeName)stn;
+				} else {
+					tn = m_modules.getLast().scope(stn);
+				}
+				DeferredField df = new DeferredField(fieldName.getSymbolName(), tn, null, m_lastComment, typeName.getStart());
 				if(af != null) {
 					//it's an array of structs (messages)
 					af.add(df);

@@ -49,6 +49,7 @@ public interface TokenConstants {
 		FLOAT("float"),
 		FLOAT32("float32"),
 		FLOAT64("flaot64"),
+		FORWARD_SLASH("/"),
 		HASH("#"),
 		IMPORT("import"),
 		INT("int"),
