@@ -1228,7 +1228,8 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 				n = arraySizeNumber.getNumber().asInt();
 			
 			}
-			ArrayField af = (cb == null || fieldName == null || baseType == null) ? null :new ArrayField(fieldName.getSymbolName(), null, new int[] {n}, fixed, m_lastComment, baseType.getStart());
+			
+			ArrayField af = (cb == null || fieldName == null) ? null :new ArrayField(fieldName.getSymbolName(), null, new int[] {n}, fixed, m_lastComment, t.getStart());
 
 			
 			if(baseType != null) {
@@ -1304,7 +1305,8 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 				} else {
 					tn = m_modules.getLast().scope(stn);
 				}
-				DeferredField df = new DeferredField(fieldName.getSymbolName(), tn, null, m_lastComment, typeName.getStart());
+				ScopeName[] imports = getImports(true);
+				DeferredField df = new DeferredField(fieldName.getSymbolName(), tn, imports, m_lastComment, typeName.getStart());
 				if(af != null) {
 					//it's an array of structs (messages)
 					af.add(df);
@@ -1329,7 +1331,7 @@ public class BlueberrySchemaParser implements Constants, TokenConstants {
 				//for now assume that the name of the directory containing the msg folder is the package (or module as I'm calling it)
 				//also, the file name is the message name
 
-				BlueModule m = new BlueModule(ScopeName.make(SymbolName.Case.LOWER_SNAKE, "/", fpt.getPathElementFromEnd(2)), fpt.getStart());
+				BlueModule m = new BlueModule(ScopeName.make(SymbolName.Case.LOWER_SNAKE, "/", fpt.getPathElementFromEnd(2)).makeAbsolute(), fpt.getStart());
 				int i = m_modules.indexOf(m);
 				if(i >= 0) {
 					m = m_modules.get(i);
